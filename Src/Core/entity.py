@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 
 class entity(ABC):
     """Represents a base entity."""
-
     __name: str
     __id: uuid.UUID
 
