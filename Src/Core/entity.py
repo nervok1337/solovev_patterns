@@ -4,13 +4,17 @@ from abc import ABC, abstractmethod
 class entity(ABC):
     """Represents a base entity."""
     __name: str
-    __id: uuid.UUID
+    __unique_code: str
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.__unique_code = uuid.uuid().hex
 
     @property
     @abstractmethod
     def id(self) -> uuid.UUID:
         """Returns the entity identifier."""
-        pass
+        return self.__unique_code
 
     @property
     @abstractmethod
