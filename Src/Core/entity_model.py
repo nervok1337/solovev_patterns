@@ -28,10 +28,16 @@ class entity_model(ABC):
     @name.setter
     def name(self, value: str) -> None:
         """Устанавливает наименование сущности."""
-        if value == "":
-            raise ValueError("Name cannot be empty")
+        if not isinstance(value, str) or value.strip() == "":
+            raise arguments_exception("name", "Наименование не может быть пустым!")
 
-        self.__name = value
+        if len(value.strip()) > 50:
+            raise arguments_exception(
+                "name",
+                "Длина наименования не может превышать 50 символов!",
+            )
+
+        self.__name = value.strip()
 
     @property
     def unique_code(self) -> str:
@@ -41,7 +47,7 @@ class entity_model(ABC):
     @unique_code.setter
     def unique_code(self, value: str) -> None:
         """Изменяет уникальный код через прежний интерфейс."""
-        if value.strip() == "":
+        if not isinstance(value, str) or value.strip() == "":
             raise arguments_exception(
                 "value",
                 "Некорректно передан параметр!",
