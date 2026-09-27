@@ -26,7 +26,8 @@ class abstract_model(ABC):
 
         self.__unique_code = value.strip()
     
-    def __eq__(self, other):
-        return self.__unique_code == other.__unique_code
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, abstract_model):
+            return NotImplemented
 
-  
+        return self.unique_code == other.unique_code
