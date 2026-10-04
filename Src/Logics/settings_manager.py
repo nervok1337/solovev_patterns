@@ -42,7 +42,8 @@ class settings_manager(abstract_manager):
         validator.validate(organization_data.get("bik"), str)
         validator.validate(organization_data.get("account"), str)
         validator.validate(organization_data.get("ownership_form"), str)
-        validator.validate(boss_name, str, 255)
+        if boss_name is not None:
+            validator.validate(boss_name, str, 255)
         validator.validate(account_name, str, 255)
         validator.validate(is_first_start, bool)
 
@@ -55,7 +56,8 @@ class settings_manager(abstract_manager):
         )
         converted_settings = settings_model()
         converted_settings.organization = organization
-        converted_settings.boss_name = boss_name
+        if boss_name is not None:
+            converted_settings.boss_name = boss_name
         converted_settings.account_name = account_name
         converted_settings.is_first_start = is_first_start
 

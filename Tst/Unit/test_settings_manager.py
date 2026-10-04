@@ -74,6 +74,18 @@ def test_convert_settings_manager_maps_all_fields(settings_data):
     assert manager.is_loaded
 
 
+def test_convert_settings_manager_without_boss_name(settings_data):
+    """Проверяет загрузку настроек без необязательного имени директора."""
+    settings_data.pop("boss_name")
+    manager = settings_manager()
+
+    result = manager.convert(settings_data)
+
+    assert result
+    assert manager.settings.boss_name == ""
+    assert manager.is_loaded
+
+
 def test_argument_exception_settings_manager_invalid_data():
     """Проверяет ошибку при неполном наборе исходных данных."""
     with pytest.raises(argument_exception):
