@@ -58,16 +58,19 @@ classDiagram
         -groups: dict
         -warehouses: dict
         -nomenclatures: dict
+        -recipes: dict
         -is_loaded: bool
         +convert(settings: settings_model) bool
         +add_range(value: range_model) None
         +add_group(value: nomenclature_group_model) None
         +add_warehouse(value: warehouse_model) None
         +add_nomenclature(value: nomenclature_model) None
+        +add_recipe(value: recipe_model) None
         +ranges list
         +groups list
         +warehouses list
         +nomenclatures list
+        +recipes list
         +is_loaded bool
     }
 
@@ -76,6 +79,7 @@ classDiagram
     storage_manager o-- nomenclature_group_model
     storage_manager o-- warehouse_model
     storage_manager o-- nomenclature_model
+    storage_manager o-- recipe_model
     nomenclature_model --> range_model
     nomenclature_model --> nomenclature_group_model
     storage_manager ..> settings_model : first start

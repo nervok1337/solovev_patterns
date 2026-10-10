@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from Src.Core.entity_model import entity_model
 from Src.Core.exception import arguments_exception
 from Src.Models.nomenclature_group_model import nomenclature_group_model
@@ -10,6 +12,17 @@ class nomenclature_model(entity_model):
     __full_name: str
     __group: nomenclature_group_model
     __range: range_model
+
+    @classmethod
+    def create(
+        cls,
+        name: str,
+        full_name: str,
+        group: nomenclature_group_model,
+        range: range_model,
+    ) -> nomenclature_model:
+        """Создаёт элемент номенклатуры фабричным методом."""
+        return cls(name, full_name, group, range)
 
     def __init__(
         self,
