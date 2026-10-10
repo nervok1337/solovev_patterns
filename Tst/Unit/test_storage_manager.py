@@ -6,6 +6,7 @@ from Src.Logics.storage_manager import storage_manager
 from Src.Models.nomenclature_group_model import nomenclature_group_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
+from Src.Models.recipe_model import recipe_model
 from Src.Models.settings_model import settings_model
 from Src.Models.warehouse_model import warehouse_model
 
@@ -50,6 +51,7 @@ def test_not_empty_storage_manager_convert():
     assert manager.groups
     assert manager.warehouses
     assert manager.nomenclatures
+    assert manager.recipes
 
 def test_equals_storage_manager_create():
     # Подготовка
@@ -86,6 +88,7 @@ def test_equals_storage_manager_data():
     assert instance1.groups == instance2.groups
     assert instance1.warehouses == instance2.warehouses
     assert instance1.nomenclatures == instance2.nomenclatures
+    assert instance1.recipes == instance2.recipes
 
 def test_convert_storage_manager_first_start():
     # Подготовка
@@ -113,6 +116,7 @@ def test_not_convert_storage_manager_not_first_start():
     assert manager.groups == []
     assert manager.warehouses == []
     assert manager.nomenclatures == []
+    assert manager.recipes == []
 
 
 def test_storage_manager_inherits_abstract_manager():
@@ -156,6 +160,7 @@ def test_convert_storage_manager_creates_expected_initial_data():
         "Сахар",
         "Пакет",
     }
+    assert {item.name for item in manager.recipes} == {"Молочная карамель"}
 
 
 def test_convert_storage_manager_preserves_model_relationships():
@@ -187,6 +192,7 @@ def test_convert_storage_manager_does_not_duplicate_initial_data():
         len(manager.groups),
         len(manager.warehouses),
         len(manager.nomenclatures),
+        len(manager.recipes),
     )
     manager.convert(settings)
 
@@ -195,6 +201,23 @@ def test_convert_storage_manager_does_not_duplicate_initial_data():
         len(manager.groups),
         len(manager.warehouses),
         len(manager.nomenclatures),
+        len(manager.recipes),
+    )
+
+
+def test_equals_storage_manager_initial_recipe_weights():
+    """Проверяет веса рецепта, созданного при первом запуске."""
+    settings = create_settings()
+    manager = storage_manager()
+
+    manager.convert(settings)
+    recipe = manager.recipes[0]
+
+    assert recipe.gross_weight == 510
+    assert recipe.net_weight == 500
+    assert any(
+        item.nomenclature.group.name == "Упаковка"
+        for item in recipe.ingredients
     )
 
 
@@ -247,6 +270,17 @@ def test_add_nomenclature_storage_manager_does_not_duplicate_object():
     manager.add_nomenclature(nomenclature)
 
     assert manager.nomenclatures == [nomenclature]
+
+
+def test_add_recipe_storage_manager_does_not_duplicate_object():
+    """Проверяет добавление уникальной технологической карты."""
+    manager = storage_manager()
+    recipe = recipe_model.create("Тестовый рецепт")
+
+    manager.add_recipe(recipe)
+    manager.add_recipe(recipe)
+
+    assert manager.recipes == [recipe]
 
 
 def test_argument_exception_storage_manager_invalid_object():

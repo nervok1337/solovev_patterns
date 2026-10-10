@@ -10,6 +10,16 @@ class range_model(entity_model):
     __conversion_factor: float
     __base_range: range_model
 
+    @classmethod
+    def create(
+        cls,
+        name: str,
+        conversion_factor: float,
+        base_range: range_model | None = None,
+    ) -> range_model:
+        """Создаёт единицу измерения фабричным методом."""
+        return cls(name, conversion_factor, base_range)
+
     def __init__(
         self,
         name: str,

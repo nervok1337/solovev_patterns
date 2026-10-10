@@ -1,8 +1,10 @@
 from Src.Core.abstract_manager import abstract_manager
 from Src.Core.validator import validator
+from Src.Models.ingredient_model import ingredient_model
 from Src.Models.nomenclature_group_model import nomenclature_group_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
+from Src.Models.recipe_model import recipe_model
 from Src.Models.settings_model import settings_model
 from Src.Models.warehouse_model import warehouse_model
 
@@ -25,6 +27,7 @@ class storage_manager(abstract_manager):
         self.__groups: dict[str, nomenclature_group_model] = {}
         self.__warehouses: dict[str, warehouse_model] = {}
         self.__nomenclatures: dict[str, nomenclature_model] = {}
+        self.__recipes: dict[str, recipe_model] = {}
         self.__is_loaded = False
         self.__initialized = True
 
@@ -43,19 +46,19 @@ class storage_manager(abstract_manager):
         if self.__is_loaded:
             return True
 
-        piece = range_model("Штука", 1)
-        kilogram = range_model("Килограмм", 1)
-        gram = range_model("Грамм", 0.001, kilogram)
-        liter = range_model("Литр", 1)
-        milliliter = range_model("Миллилитр", 0.001, liter)
+        piece = range_model.create("Штука", 1)
+        kilogram = range_model.create("Килограмм", 1)
+        gram = range_model.create("Грамм", 0.001, kilogram)
+        liter = range_model.create("Литр", 1)
+        milliliter = range_model.create("Миллилитр", 0.001, liter)
 
-        products = nomenclature_group_model("Продукты")
-        drinks = nomenclature_group_model("Напитки")
-        packaging = nomenclature_group_model("Упаковка")
+        products = nomenclature_group_model.create("Продукты")
+        drinks = nomenclature_group_model.create("Напитки")
+        packaging = nomenclature_group_model.create("Упаковка")
 
-        main_warehouse = warehouse_model("Основной склад")
-        kitchen = warehouse_model("Кухня")
-        bar = warehouse_model("Бар")
+        main_warehouse = warehouse_model.create("Основной склад")
+        kitchen = warehouse_model.create("Кухня")
+        bar = warehouse_model.create("Бар")
 
         for unit in (piece, kilogram, gram, liter, milliliter):
             self.add_range(unit)
@@ -66,14 +69,44 @@ class storage_manager(abstract_manager):
         for warehouse in (main_warehouse, kitchen, bar):
             self.add_warehouse(warehouse)
 
-        initial_nomenclatures = (
-            nomenclature_model("Вода", "Вода питьевая", drinks, liter),
-            nomenclature_model("Молоко", "Молоко питьевое", products, liter),
-            nomenclature_model("Сахар", "Сахар-песок", products, kilogram),
-            nomenclature_model("Пакет", "Пакет упаковочный", packaging, piece),
+        water = nomenclature_model.create(
+            "Вода",
+            "Вода питьевая",
+            drinks,
+            liter,
         )
+        milk = nomenclature_model.create(
+            "Молоко",
+            "Молоко питьевое",
+            products,
+            liter,
+        )
+        sugar = nomenclature_model.create(
+            "Сахар",
+            "Сахар-песок",
+            products,
+            kilogram,
+        )
+        package = nomenclature_model.create(
+            "Пакет",
+            "Пакет упаковочный",
+            packaging,
+            piece,
+        )
+        initial_nomenclatures = (water, milk, sugar, package)
         for nomenclature in initial_nomenclatures:
             self.add_nomenclature(nomenclature)
+
+        milk_caramel = recipe_model.create(
+            "Молочная карамель",
+            (
+                ingredient_model.create(sugar, 200, 200),
+                ingredient_model.create(milk, 250, 250),
+                ingredient_model.create(water, 50, 50),
+                ingredient_model.create(package, 10, 0),
+            ),
+        )
+        self.add_recipe(milk_caramel)
 
         self.__is_loaded = True
         return True
@@ -98,6 +131,11 @@ class storage_manager(abstract_manager):
         validator.validate(value, nomenclature_model)
         self.__nomenclatures.setdefault(value.id, value)
 
+    def add_recipe(self, value: recipe_model) -> None:
+        """Добавляет технологическую карту без дублирования."""
+        validator.validate(value, recipe_model)
+        self.__recipes.setdefault(value.id, value)
+
     @property
     def ranges(self) -> list[range_model]:
         """Возвращает список единиц измерения."""
@@ -117,3 +155,8 @@ class storage_manager(abstract_manager):
     def nomenclatures(self) -> list[nomenclature_model]:
         """Возвращает список номенклатуры."""
         return list(self.__nomenclatures.values())
+
+    @property
+    def recipes(self) -> list[recipe_model]:
+        """Возвращает список технологических карт."""
+        return list(self.__recipes.values())

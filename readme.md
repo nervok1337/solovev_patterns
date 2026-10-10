@@ -48,6 +48,8 @@
 - [Техническое задание](Docs/Technicaltask.md)
 - [Домены и сущности системы](Docs/Entities.md)
 - [Требования к исходному коду](Docs/CodeCases.md)
+- [Рецепт молочной карамели](Docs/Recipe.md)
+- [UML-диаграмма моделей рецепта](Docs/RecipeUml.md)
 
 ## Абстрактный класс
 
