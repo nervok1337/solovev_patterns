@@ -74,7 +74,7 @@ def test_convert_settings_manager_maps_all_fields(settings_data):
     assert manager.is_loaded
 
 
-def test_convert_settings_manager_without_boss_name(settings_data):
+def test_not_raise_settings_manager_convert_without_boss_name(settings_data):
     """Проверяет загрузку настроек без необязательного имени директора."""
     settings_data.pop("boss_name")
     manager = settings_manager()
