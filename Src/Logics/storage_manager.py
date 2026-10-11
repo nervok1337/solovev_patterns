@@ -97,12 +97,18 @@ class storage_manager(abstract_manager):
         for nomenclature in initial_nomenclatures:
             self.add_nomenclature(nomenclature)
 
-        milk_caramel = recipe_model.create(
-            "Молочная карамель",
+        caramel_base = recipe_model.create(
+            "Карамельная основа",
             (
                 ingredient_model.create(sugar, 200, 200),
                 ingredient_model.create(milk, 250, 250),
                 ingredient_model.create(water, 50, 50),
+            ),
+        )
+        milk_caramel = recipe_model.create(
+            "Молочная карамель",
+            (
+                caramel_base,
                 ingredient_model.create(package, 10, 0),
             ),
         )

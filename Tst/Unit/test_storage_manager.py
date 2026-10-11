@@ -3,6 +3,7 @@ import pytest
 from Src.Core.abstract_manager import abstract_manager
 from Src.Core.validator import argument_exception
 from Src.Logics.storage_manager import storage_manager
+from Src.Models.ingredient_model import ingredient_model
 from Src.Models.nomenclature_group_model import nomenclature_group_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
@@ -215,8 +216,10 @@ def test_equals_storage_manager_initial_recipe_weights():
 
     assert recipe.gross_weight == 510
     assert recipe.net_weight == 500
+    assert any(isinstance(item, recipe_model) for item in recipe.ingredients)
     assert any(
-        item.nomenclature.group.name == "Упаковка"
+        isinstance(item, ingredient_model)
+        and item.nomenclature.group.name == "Упаковка"
         for item in recipe.ingredients
     )
 

@@ -56,6 +56,23 @@ def test_equals_recipe_model_weights_from_ingredients(product_group, gram):
     assert recipe.net_weight == 430
 
 
+def test_equals_recipe_model_weights_from_nested_recipes(product_group, gram):
+    """Проверяет рекурсивный расчёт для нескольких уровней вложенности."""
+    sugar = create_ingredient("Сахар", 200, 190, product_group, gram)
+    milk = create_ingredient("Молоко", 250, 240, product_group, gram)
+    package = create_ingredient("Пакет", 10, 0, product_group, gram)
+    caramel_base = recipe_model.create("Основа", (sugar, milk))
+    packaged_caramel = recipe_model.create(
+        "Карамель в упаковке",
+        (caramel_base, package),
+    )
+
+    dessert = recipe_model.create("Десерт", (packaged_caramel,))
+
+    assert dessert.gross_weight == 460
+    assert dessert.net_weight == 430
+
+
 def test_increased_recipe_model_weights_after_add_ingredient(
     product_group,
     gram,
@@ -85,6 +102,15 @@ def test_decreased_recipe_model_weights_after_remove_ingredient(
     assert recipe.ingredients == [sugar]
     assert recipe.gross_weight == 200
     assert recipe.net_weight == 190
+
+
+def test_arguments_exception_recipe_model_cyclic_composition():
+    """Проверяет запрет циклического вложения технологических карт."""
+    base_recipe = recipe_model.create("Основа")
+    composed_recipe = recipe_model.create("Блюдо", (base_recipe,))
+
+    with pytest.raises(arguments_exception):
+        base_recipe.add_ingredient(composed_recipe)
 
 
 @pytest.mark.parametrize(

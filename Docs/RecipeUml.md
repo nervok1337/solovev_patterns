@@ -25,17 +25,19 @@ classDiagram
         -ingredients list
         +gross_weight float
         +net_weight float
-        +create(name, ingredients) recipe_model
-        +add_ingredient(value) None
-        +remove_ingredient(value) None
+        +create(name, ingredients | recipes) recipe_model
+        +add_ingredient(value: ingredient_model | recipe_model) None
+        +remove_ingredient(value: ingredient_model | recipe_model) None
     }
 
     entity_model <|-- ingredient_model
     entity_model <|-- recipe_model
     ingredient_model --> nomenclature_model
     recipe_model *-- ingredient_model
+    recipe_model *-- recipe_model : nested recipe
 ```
 
 `recipe_model` вычисляет веса брутто и нетто при обращении к свойствам,
-складывая соответствующие веса всех строк. Поэтому добавление или исключение
-ингредиента сразу отражается на итогах технологической карты.
+рекурсивно обходя ингредиенты и вложенные технологические карты. Поэтому
+добавление или исключение ингредиента на любом уровне сразу отражается на
+итогах составного блюда. Циклическое вложение технологических карт запрещено.
