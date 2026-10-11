@@ -208,12 +208,15 @@ def test_convert_storage_manager_does_not_duplicate_initial_data():
 
 def test_equals_storage_manager_initial_recipe_weights():
     """Проверяет веса рецепта, созданного при первом запуске."""
+    # Подготовка
     settings = create_settings()
     manager = storage_manager()
 
+    # Действие
     manager.convert(settings)
     recipe = manager.recipes[0]
 
+    # Проверки
     assert recipe.gross_weight == 510
     assert recipe.net_weight == 500
     assert any(isinstance(item, recipe_model) for item in recipe.ingredients)
@@ -277,12 +280,15 @@ def test_add_nomenclature_storage_manager_does_not_duplicate_object():
 
 def test_add_recipe_storage_manager_does_not_duplicate_object():
     """Проверяет добавление уникальной технологической карты."""
+    # Подготовка
     manager = storage_manager()
     recipe = recipe_model.create("Тестовый рецепт")
 
+    # Действие
     manager.add_recipe(recipe)
     manager.add_recipe(recipe)
 
+    # Проверки
     assert manager.recipes == [recipe]
 
 

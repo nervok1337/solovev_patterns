@@ -38,26 +38,38 @@ def test_models_recipe_and_ingredient_inherit_entity_model(
     gram,
 ):
     """Проверяет общий базовый тип новых доменных моделей."""
+    # Подготовка
     ingredient = create_ingredient("Сахар", 200, 190, product_group, gram)
     recipe = recipe_model.create("Карамель", (ingredient,))
 
-    assert isinstance(ingredient, entity_model)
-    assert isinstance(recipe, entity_model)
+    # Действие
+    ingredient_is_entity = isinstance(ingredient, entity_model)
+    recipe_is_entity = isinstance(recipe, entity_model)
+
+    # Проверки
+    assert ingredient_is_entity
+    assert recipe_is_entity
 
 
 def test_equals_recipe_model_weights_from_ingredients(product_group, gram):
     """Проверяет сумму весов брутто и нетто всех ингредиентов."""
+    # Подготовка
     sugar = create_ingredient("Сахар", 200, 190, product_group, gram)
     milk = create_ingredient("Молоко", 250, 240, product_group, gram)
-
     recipe = recipe_model.create("Карамель", (sugar, milk))
 
-    assert recipe.gross_weight == 450
-    assert recipe.net_weight == 430
+    # Действие
+    gross_weight = recipe.gross_weight
+    net_weight = recipe.net_weight
+
+    # Проверки
+    assert gross_weight == 450
+    assert net_weight == 430
 
 
 def test_equals_recipe_model_weights_from_nested_recipes(product_group, gram):
     """Проверяет рекурсивный расчёт для нескольких уровней вложенности."""
+    # Подготовка
     sugar = create_ingredient("Сахар", 200, 190, product_group, gram)
     milk = create_ingredient("Молоко", 250, 240, product_group, gram)
     package = create_ingredient("Пакет", 10, 0, product_group, gram)
@@ -66,11 +78,15 @@ def test_equals_recipe_model_weights_from_nested_recipes(product_group, gram):
         "Карамель в упаковке",
         (caramel_base, package),
     )
-
     dessert = recipe_model.create("Десерт", (packaged_caramel,))
 
-    assert dessert.gross_weight == 460
-    assert dessert.net_weight == 430
+    # Действие
+    gross_weight = dessert.gross_weight
+    net_weight = dessert.net_weight
+
+    # Проверки
+    assert gross_weight == 460
+    assert net_weight == 430
 
 
 def test_increased_recipe_model_weights_after_add_ingredient(
@@ -78,12 +94,15 @@ def test_increased_recipe_model_weights_after_add_ingredient(
     gram,
 ):
     """Проверяет пересчёт весов после добавления ингредиента."""
+    # Подготовка
     sugar = create_ingredient("Сахар", 200, 190, product_group, gram)
     milk = create_ingredient("Молоко", 250, 240, product_group, gram)
     recipe = recipe_model.create("Карамель", (sugar,))
 
+    # Действие
     recipe.add_ingredient(milk)
 
+    # Проверки
     assert recipe.gross_weight == 450
     assert recipe.net_weight == 430
 
@@ -93,12 +112,15 @@ def test_decreased_recipe_model_weights_after_remove_ingredient(
     gram,
 ):
     """Проверяет пересчёт весов после исключения ингредиента."""
+    # Подготовка
     sugar = create_ingredient("Сахар", 200, 190, product_group, gram)
     milk = create_ingredient("Молоко", 250, 240, product_group, gram)
     recipe = recipe_model.create("Карамель", (sugar, milk))
 
+    # Действие
     recipe.remove_ingredient(milk)
 
+    # Проверки
     assert recipe.ingredients == [sugar]
     assert recipe.gross_weight == 200
     assert recipe.net_weight == 190
@@ -106,11 +128,16 @@ def test_decreased_recipe_model_weights_after_remove_ingredient(
 
 def test_arguments_exception_recipe_model_cyclic_composition():
     """Проверяет запрет циклического вложения технологических карт."""
+    # Подготовка
     base_recipe = recipe_model.create("Основа")
     composed_recipe = recipe_model.create("Блюдо", (base_recipe,))
 
-    with pytest.raises(arguments_exception):
+    # Действие
+    with pytest.raises(arguments_exception) as exception:
         base_recipe.add_ingredient(composed_recipe)
+
+    # Проверки
+    assert exception.type is arguments_exception
 
 
 @pytest.mark.parametrize(
@@ -124,6 +151,7 @@ def test_arguments_exception_ingredient_model_invalid_weights(
     net_weight,
 ):
     """Проверяет отклонение некорректных весов ингредиента."""
+    # Подготовка
     nomenclature = nomenclature_model.create(
         "Продукт",
         "Тестовый продукт",
@@ -131,5 +159,9 @@ def test_arguments_exception_ingredient_model_invalid_weights(
         gram,
     )
 
-    with pytest.raises(arguments_exception):
+    # Действие
+    with pytest.raises(arguments_exception) as exception:
         ingredient_model.create(nomenclature, gross_weight, net_weight)
+
+    # Проверки
+    assert exception.type is arguments_exception
