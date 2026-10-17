@@ -1,5 +1,3 @@
-import json
-
 import connexion
 from flask import Response
 
@@ -27,11 +25,8 @@ def get_report():
     )
 
 # Инициализация приложения
-with open("settings.json", encoding="utf-8") as file:
-    settings_data = json.load(file)
-
 settings = settings_manager()
-settings.convert(settings_data)
+settings.load("settings.json")
 
 storage = storage_manager()
 storage.convert(settings.settings)

@@ -1,4 +1,11 @@
 from enum import Enum
 
-class report_type_enum(Enum):
-    TXT = 1
+
+class report_type_enum(str, Enum):
+    """Допустимые форматы формирования отчёта."""
+
+    CSV = "CSV"
+    MARKDOWN = "Markdown"
+    XML = "XML"
+    TXT = "TXT"
+    HTML = "HTML"

@@ -1,8 +1,12 @@
 from Src.Core.abstract_model import abstract_model
-from Src.Models.organization_model import organization_model
 from Src.Core.validator import validator
+from Src.Dtos.report_type_dto import report_type_enum
+from Src.Models.organization_model import organization_model
+
 
 class settings_model(abstract_model):
+    """Настройки приложения."""
+
     # Карточка организации
     __organization: organization_model = None
     # Наименование директора
@@ -10,6 +14,7 @@ class settings_model(abstract_model):
     # Наименование главного бухгалтера
     __account_name:str = ""
     __is_first_start: bool = True
+    __response_format: report_type_enum = report_type_enum.TXT
 
     @property
     def organization(self) -> organization_model:
@@ -44,4 +49,14 @@ class settings_model(abstract_model):
         validator.validate(value, bool)
         self.__is_first_start = value
 
+    @property
+    def response_format(self) -> report_type_enum:
+        """Возвращает формат отчёта по умолчанию."""
+        return self.__response_format
+
+    @response_format.setter
+    def response_format(self, value: report_type_enum) -> None:
+        """Устанавливает один из поддерживаемых форматов отчёта."""
+        validator.validate(value, report_type_enum)
+        self.__response_format = value
 

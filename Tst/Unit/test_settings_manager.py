@@ -2,6 +2,7 @@ import pytest
 
 from Src.Core.abstract_manager import abstract_manager
 from Src.Core.validator import argument_exception
+from Src.Dtos.report_type_dto import report_type_enum
 from Src.Logics.settings_manager import settings_manager
 
 
@@ -29,6 +30,7 @@ def settings_data():
         "boss_name": "Иванов Иван Иванович",
         "account_name": "Петрова Анна Сергеевна",
         "is_first_start": True,
+        "response_format": "Markdown",
     }
 
 
@@ -71,6 +73,7 @@ def test_convert_settings_manager_maps_all_fields(settings_data):
     assert manager.settings.boss_name == "Иванов Иван Иванович"
     assert manager.settings.account_name == "Петрова Анна Сергеевна"
     assert manager.settings.is_first_start is True
+    assert manager.settings.response_format is report_type_enum.MARKDOWN
     assert manager.is_loaded
 
 
@@ -102,3 +105,26 @@ def test_second_create_settings_manager_preserves_converted_data(settings_data):
 
     assert second_instance.settings is converted_settings
     assert second_instance.is_loaded
+
+
+def test_load_settings_manager_reads_json_file(tmp_path, settings_data):
+    """Проверяет загрузку и преобразование настроек из JSON-файла."""
+    import json
+
+    file_name = tmp_path / "settings.json"
+    file_name.write_text(json.dumps(settings_data), encoding="utf-8")
+    manager = settings_manager()
+
+    result = manager.load(str(file_name))
+
+    assert result is True
+    assert manager.is_loaded
+    assert manager.settings.response_format is report_type_enum.MARKDOWN
+
+
+def test_argument_exception_settings_manager_unknown_response_format(settings_data):
+    """Проверяет отклонение неподдерживаемого формата ответа."""
+    settings_data["response_format"] = "PDF"
+
+    with pytest.raises(argument_exception):
+        settings_manager().convert(settings_data)

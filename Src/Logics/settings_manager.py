@@ -1,5 +1,8 @@
+import json
+
 from Src.Core.abstract_manager import abstract_manager
-from Src.Core.validator import validator
+from Src.Core.validator import argument_exception, validator
+from Src.Dtos.report_type_dto import report_type_enum
 from Src.Models.organization_model import organization_model
 from Src.Models.settings_model import settings_model
 
@@ -27,6 +30,15 @@ class settings_manager(abstract_manager):
         """Возвращает признак успешного преобразования настроек."""
         return self.__is_loaded
 
+    def load(self, file_name: str = "settings.json") -> bool:
+        """Загружает настройки из JSON-файла и преобразует их в модель."""
+        validator.validate(file_name, str)
+
+        with open(file_name, encoding="utf-8") as file:
+            data = json.load(file)
+
+        return self.convert(data)
+
     def convert(self, data: dict) -> bool:
         """Проверяет словарь и преобразует его в модель настроек."""
         validator.validate(data, dict)
@@ -35,6 +47,7 @@ class settings_manager(abstract_manager):
         boss_name = data.get("boss_name", "")
         account_name = data.get("account_name")
         is_first_start = data.get("is_first_start")
+        response_format = data.get("response_format")
 
         validator.validate(organization_data, dict)
         validator.validate(organization_data.get("name"), str, 50)
@@ -46,6 +59,14 @@ class settings_manager(abstract_manager):
             validator.validate(boss_name, str, 255)
         validator.validate(account_name, str, 255)
         validator.validate(is_first_start, bool)
+        validator.validate(response_format, str)
+
+        try:
+            converted_response_format = report_type_enum[response_format.strip().upper()]
+        except KeyError as error:
+            raise argument_exception(
+                f"Неподдерживаемый формат ответа: {response_format}"
+            ) from error
 
         organization = organization_model(
             organization_data["name"],
@@ -60,6 +81,7 @@ class settings_manager(abstract_manager):
             converted_settings.boss_name = boss_name
         converted_settings.account_name = account_name
         converted_settings.is_first_start = is_first_start
+        converted_settings.response_format = converted_response_format
 
         self.__settings = converted_settings
         self.__is_loaded = True

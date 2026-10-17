@@ -14,6 +14,7 @@ classDiagram
         -instance: settings_manager
         -settings: settings_model
         -is_loaded: bool
+        +load(file_name: str) bool
         +convert(data: dict) bool
         +settings settings_model
         +is_loaded bool
@@ -24,6 +25,7 @@ classDiagram
         +boss_name str
         +account_name str
         +is_first_start bool
+        +response_format report_type_enum
     }
 
     class organization_model {
