@@ -18,5 +18,6 @@ class csv_report(abstract_report):
         writer.writerows(data.rows)
 
         result = report_result_dto()
-        result.text = stream.getvalue().rstrip("\n")
+        content = stream.getvalue().rstrip("\n")
+        result.binary = list(content.encode("utf-8"))
         return result

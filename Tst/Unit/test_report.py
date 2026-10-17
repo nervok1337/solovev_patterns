@@ -72,7 +72,8 @@ def test_csv_report_builds_recipe_table():
 
     # Действие
     result = report.build(recipe)
-    rows = list(csv.reader(StringIO(result.text)))
+    content = bytes(result.binary).decode("utf-8")
+    rows = list(csv.reader(StringIO(content)))
 
     # Проверки
     assert isinstance(result, report_result_dto)
@@ -81,7 +82,8 @@ def test_csv_report_builds_recipe_table():
         [sugar.unique_code, "Сахар", "200.0", "190.0"],
         [milk.unique_code, "Молоко", "250.0", "240.0"],
     ]
-    assert result.binary == []
+    assert result.text == ""
+    assert result.binary != []
 
 
 def test_markdown_report_builds_recipe_table():
@@ -92,16 +94,18 @@ def test_markdown_report_builds_recipe_table():
 
     # Действие
     result = report.build(recipe)
+    content = bytes(result.binary).decode("utf-8")
 
     # Проверки
     assert isinstance(result, report_result_dto)
-    assert result.text.splitlines() == [
+    assert content.splitlines() == [
         "| Код | Наименование | Брутто | Нетто |",
         "| --- | --- | ---: | ---: |",
         f"| {sugar.unique_code} | Сахар | 200.0 | 190.0 |",
         f"| {milk.unique_code} | Молоко | 250.0 | 240.0 |",
     ]
-    assert result.binary == []
+    assert result.text == ""
+    assert result.binary != []
 
 
 def test_xml_report_builds_recipe_document():

@@ -29,5 +29,5 @@ class markdown_report(abstract_report):
             rows.append(f"| {' | '.join(escaped_values)} |")
 
         result = report_result_dto()
-        result.text = "\n".join(rows)
+        result.binary = list("\n".join(rows).encode("utf-8"))
         return result
