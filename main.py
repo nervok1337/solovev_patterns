@@ -31,7 +31,7 @@ settings.load("settings.json")
 storage = storage_manager()
 storage.convert(settings.settings)
 
-factory = report_factory()
+factory = report_factory(settings.settings)
 
 if __name__ == "__main__":
     api.run(host="0.0.0.0", port=8000)
