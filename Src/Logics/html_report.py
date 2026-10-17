@@ -1,38 +1,28 @@
 from html import escape
 
 from Src.Core.abstarct_report import abstract_report
-from Src.Core.validator import validator
 from Src.Dtos.report_result_dto import report_result_dto
-from Src.Models.recipe_model import recipe_model
+from Src.Logics.report_data import create_report_data
 
 
 class html_report(abstract_report):
-    """Формирует состав рецепта в виде HTML-таблицы."""
+    """Формирует данные сущности в виде HTML-таблицы."""
 
-    def build(self, source: recipe_model) -> report_result_dto:
-        """Создаёт HTML-таблицу с ингредиентами рецепта."""
-        validator.validate(source, recipe_model)
+    def build(self, source) -> report_result_dto:
+        """Создаёт HTML-таблицу с данными сущности."""
+        data = create_report_data(source)
         rows = []
 
-        for item in source.ingredients:
-            values = (
-                item.unique_code,
-                item.name,
-                item.gross_weight,
-                item.net_weight,
-            )
-            cells = "".join(f"<td>{escape(str(value))}</td>" for value in values)
+        for row in data.rows:
+            cells = "".join(f"<td>{escape(str(value))}</td>" for value in row)
             rows.append(f"<tr>{cells}</tr>")
 
+        headers = "".join(
+            f"<th>{escape(header)}</th>" for header in data.headers
+        )
         result = report_result_dto()
         result.text = (
-            "<table>"
-            "<thead><tr>"
-            "<th>Код</th>"
-            "<th>Наименование</th>"
-            "<th>Брутто</th>"
-            "<th>Нетто</th>"
-            "</tr></thead>"
+            f"<table><thead><tr>{headers}</tr></thead>"
             f"<tbody>{''.join(rows)}</tbody>"
             "</table>"
         )

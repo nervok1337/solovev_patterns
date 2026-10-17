@@ -1,33 +1,31 @@
 from Src.Core.abstarct_report import abstract_report
-from Src.Core.validator import validator
 from Src.Dtos.report_result_dto import report_result_dto
-from Src.Models.recipe_model import recipe_model
+from Src.Logics.report_data import create_report_data
 
 
 class markdown_report(abstract_report):
-    """Формирует состав рецепта в виде Markdown-таблицы."""
+    """Формирует данные сущности в виде Markdown-таблицы."""
 
     @staticmethod
     def __escape(value: object) -> str:
         """Экранирует символы, влияющие на структуру Markdown-таблицы."""
         return str(value).replace("\\", "\\\\").replace("|", "\\|")
 
-    def build(self, source: recipe_model) -> report_result_dto:
-        """Создаёт Markdown-таблицу с ингредиентами рецепта."""
-        validator.validate(source, recipe_model)
+    def build(self, source) -> report_result_dto:
+        """Создаёт Markdown-таблицу с данными сущности."""
+        data = create_report_data(source)
         rows = [
-            "| Код | Наименование | Брутто | Нетто |",
-            "| --- | --- | ---: | ---: |",
+            f"| {' | '.join(data.headers)} |",
+            "| "
+            + " | ".join(
+                "---:" if index in data.numeric_columns else "---"
+                for index in range(len(data.headers))
+            )
+            + " |",
         ]
 
-        for item in source.ingredients:
-            values = (
-                item.unique_code,
-                item.name,
-                item.gross_weight,
-                item.net_weight,
-            )
-            escaped_values = (self.__escape(value) for value in values)
+        for row in data.rows:
+            escaped_values = (self.__escape(value) for value in row)
             rows.append(f"| {' | '.join(escaped_values)} |")
 
         result = report_result_dto()
