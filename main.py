@@ -9,6 +9,39 @@ from Src.Logics.storage_manager import storage_manager
 api = connexion.FlaskApp(__name__)
 
 
+def find_entity(entity_type, entity_code):
+    """Находит сущность требуемого типа по уникальному коду."""
+    type_aliases = {
+        "nomenclature": "nomenclatures",
+        "nomenclatures": "nomenclatures",
+        "номенклатура": "nomenclatures",
+        "range": "ranges",
+        "ranges": "ranges",
+        "unit": "ranges",
+        "unit_of_measurement": "ranges",
+        "единица измерения": "ranges",
+        "recipe": "recipes",
+        "recipes": "recipes",
+        "рецепт": "recipes",
+    }
+    collection_name = type_aliases.get(entity_type)
+    if collection_name is None:
+        return None, f"Неподдерживаемый тип: {entity_type}", 400
+
+    entity = next(
+        (
+            item
+            for item in getattr(storage, collection_name)
+            if item.unique_code == entity_code
+        ),
+        None,
+    )
+    if entity is None:
+        return None, f"Сущность с кодом {entity_code} не найдена", 404
+
+    return entity, None, None
+
+
 def create_report_response(result, report_type):
     """Создаёт HTTP-ответ с учётом текстового или бинарного формата."""
     downloadable_formats = {
@@ -47,37 +80,31 @@ def get_report():
     except KeyError:
         return {"error": f"Неподдерживаемый формат: {requested_format}"}, 400
 
-    type_aliases = {
-        "nomenclature": "nomenclatures",
-        "nomenclatures": "nomenclatures",
-        "номенклатура": "nomenclatures",
-        "range": "ranges",
-        "ranges": "ranges",
-        "unit": "ranges",
-        "unit_of_measurement": "ranges",
-        "единица измерения": "ranges",
-        "recipe": "recipes",
-        "recipes": "recipes",
-        "рецепт": "recipes",
-    }
-    collection_name = type_aliases.get(requested_type)
-    if collection_name is None:
-        return {"error": f"Неподдерживаемый тип: {requested_type}"}, 400
-
-    entity = next(
-        (
-            item
-            for item in getattr(storage, collection_name)
-            if item.unique_code == requested_code
-        ),
-        None,
-    )
-    if entity is None:
-        return {"error": f"Сущность с кодом {requested_code} не найдена"}, 404
+    entity, error, status = find_entity(requested_type, requested_code)
+    if error is not None:
+        return {"error": error}, status
 
     report = factory.create(report_type)
     result = report.build(entity)
     return create_report_response(result, report_type)
+
+
+@api.route("/api/get_default_report", methods=["GET"])
+def get_default_report():
+    """Формирует отчёт сущности в формате из настроек приложения."""
+    requested_type = request.args.get("type", "").strip().lower()
+    requested_code = request.args.get("code", "").strip()
+    if not requested_type or not requested_code:
+        return {"error": "Необходимо указать type и code"}, 400
+
+    entity, error, status = find_entity(requested_type, requested_code)
+    if error is not None:
+        return {"error": error}, status
+
+    report = factory.create_default()
+    result = report.build(entity)
+    return create_report_response(result, settings.settings.response_format)
+
 
 # Инициализация приложения
 settings = settings_manager()
