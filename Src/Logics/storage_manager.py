@@ -142,6 +142,38 @@ class storage_manager(abstract_manager):
         validator.validate(value, recipe_model)
         self.__recipes.setdefault(value.id, value)
 
+    def find_entity(self, entity_type: str, entity_code: str):
+        """Находит сущность в коллекции по типу и уникальному коду."""
+        type_aliases = {
+            "nomenclature": "nomenclatures",
+            "nomenclatures": "nomenclatures",
+            "номенклатура": "nomenclatures",
+            "range": "ranges",
+            "ranges": "ranges",
+            "unit": "ranges",
+            "unit_of_measurement": "ranges",
+            "единица измерения": "ranges",
+            "recipe": "recipes",
+            "recipes": "recipes",
+            "рецепт": "recipes",
+        }
+        collection_name = type_aliases.get(entity_type)
+        if collection_name is None:
+            return None, f"Неподдерживаемый тип: {entity_type}", 400
+
+        entity = next(
+            (
+                item
+                for item in getattr(self, collection_name)
+                if item.unique_code == entity_code
+            ),
+            None,
+        )
+        if entity is None:
+            return None, f"Сущность с кодом {entity_code} не найдена", 404
+
+        return entity, None, None
+
     @property
     def ranges(self) -> list[range_model]:
         """Возвращает список единиц измерения."""

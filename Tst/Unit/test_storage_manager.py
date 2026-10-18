@@ -296,3 +296,50 @@ def test_argument_exception_storage_manager_invalid_object():
     """Проверяет отклонение объекта неверного доменного типа."""
     with pytest.raises(argument_exception):
         storage_manager().add_group(object())
+
+
+def test_find_entity_storage_manager_returns_entity():
+    """Проверяет поиск сущности в коллекции хранилища."""
+    # Подготовка
+    manager = storage_manager()
+    manager.convert(create_settings())
+    expected = manager.nomenclatures[0]
+
+    # Действие
+    entity, error, status = manager.find_entity(
+        "nomenclature",
+        expected.unique_code,
+    )
+
+    # Проверки
+    assert entity is expected
+    assert error is None
+    assert status is None
+
+
+def test_find_entity_storage_manager_rejects_unsupported_type():
+    """Проверяет отклонение неизвестного типа сущности."""
+    # Подготовка
+    manager = storage_manager()
+
+    # Действие
+    entity, error, status = manager.find_entity("unknown", "code")
+
+    # Проверки
+    assert entity is None
+    assert error == "Неподдерживаемый тип: unknown"
+    assert status == 400
+
+
+def test_find_entity_storage_manager_reports_missing_entity():
+    """Проверяет сообщение об отсутствии сущности в коллекции."""
+    # Подготовка
+    manager = storage_manager()
+
+    # Действие
+    entity, error, status = manager.find_entity("recipe", "missing")
+
+    # Проверки
+    assert entity is None
+    assert error == "Сущность с кодом missing не найдена"
+    assert status == 404
