@@ -1,12 +1,14 @@
 from html import escape
 
-from Src.Core.abstarct_report import abstract_report
+from Src.Core.abstract_text_report import abstract_text_report
 from Src.Dtos.report_result_dto import report_result_dto
 from Src.Logics.report_data import create_report_data
 
 
-class html_report(abstract_report):
+class html_report(abstract_text_report):
     """Формирует данные сущности в виде HTML-таблицы."""
+
+    content_type = "text/html; charset=utf-8"
 
     def build(self, source) -> report_result_dto:
         """Создаёт HTML-таблицу с данными сущности."""

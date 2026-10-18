@@ -1,12 +1,14 @@
 from xml.etree import ElementTree
 
-from Src.Core.abstarct_report import abstract_report
+from Src.Core.abstract_text_report import abstract_text_report
 from Src.Dtos.report_result_dto import report_result_dto
 from Src.Logics.report_data import create_report_data
 
 
-class xml_report(abstract_report):
+class xml_report(abstract_text_report):
     """Формирует данные сущности в формате XML."""
+
+    content_type = "application/xml; charset=utf-8"
 
     def build(self, source) -> report_result_dto:
         """Создаёт XML-документ с данными сущности."""

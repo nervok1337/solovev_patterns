@@ -1,10 +1,12 @@
-from Src.Core.abstarct_report import abstract_report
+from Src.Core.abstract_text_report import abstract_text_report
 from Src.Dtos.report_result_dto import report_result_dto
 from Src.Logics.report_data import create_report_data
 
 
-class text_report(abstract_report):
+class text_report(abstract_text_report):
     """Формирует данные сущности в текстовом формате."""
+
+    content_type = "text/plain; charset=utf-8"
 
     def build(self, source) -> report_result_dto:
         """Создаёт текстовую таблицу с данными сущности."""

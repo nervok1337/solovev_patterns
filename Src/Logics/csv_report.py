@@ -1,13 +1,16 @@
 import csv
 from io import StringIO
 
-from Src.Core.abstarct_report import abstract_report
+from Src.Core.abstract_binary_report import abstract_binary_report
 from Src.Dtos.report_result_dto import report_result_dto
 from Src.Logics.report_data import create_report_data
 
 
-class csv_report(abstract_report):
+class csv_report(abstract_binary_report):
     """Формирует данные сущности в формате CSV."""
+
+    content_type = "text/csv; charset=utf-8"
+    file_name = "report.csv"
 
     def build(self, source) -> report_result_dto:
         """Создаёт CSV-таблицу с данными сущности."""

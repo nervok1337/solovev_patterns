@@ -1,5 +1,5 @@
 import connexion
-from flask import Response, request
+from flask import request
 
 from Src.Dtos.report_type_dto import report_type_enum
 from Src.Logics.report_factory import report_factory
@@ -7,30 +7,6 @@ from Src.Logics.settings_manager import settings_manager
 from Src.Logics.storage_manager import storage_manager
 
 api = connexion.FlaskApp(__name__)
-
-
-def create_report_response(result, report_type):
-    """Создаёт HTTP-ответ с учётом текстового или бинарного формата."""
-    downloadable_formats = {
-        report_type_enum.CSV: ("text/csv; charset=utf-8", "report.csv"),
-        report_type_enum.MARKDOWN: ("text/markdown; charset=utf-8", "report.md"),
-    }
-    if report_type in downloadable_formats:
-        content_type, file_name = downloadable_formats[report_type]
-        return Response(
-            bytes(result.binary),
-            content_type=content_type,
-            headers={
-                "Content-Disposition": f'attachment; filename="{file_name}"',
-            },
-        )
-
-    content_types = {
-        report_type_enum.XML: "application/xml; charset=utf-8",
-        report_type_enum.TXT: "text/plain; charset=utf-8",
-        report_type_enum.HTML: "text/html; charset=utf-8",
-    }
-    return Response(result.text, content_type=content_types[report_type])
 
 
 @api.route("/api/get_report", methods=["GET"])
@@ -53,7 +29,7 @@ def get_report():
 
     report = factory.create(report_type)
     result = report.build(entity)
-    return create_report_response(result, report_type)
+    return report.create_response(result)
 
 
 @api.route("/api/get_default_report", methods=["GET"])
@@ -70,7 +46,7 @@ def get_default_report():
 
     report = factory.create_default()
     result = report.build(entity)
-    return create_report_response(result, settings.settings.response_format)
+    return report.create_response(result)
 
 
 # Инициализация приложения

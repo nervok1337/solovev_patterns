@@ -1,10 +1,13 @@
-from Src.Core.abstarct_report import abstract_report
+from Src.Core.abstract_binary_report import abstract_binary_report
 from Src.Dtos.report_result_dto import report_result_dto
 from Src.Logics.report_data import create_report_data
 
 
-class markdown_report(abstract_report):
+class markdown_report(abstract_binary_report):
     """Формирует данные сущности в виде Markdown-таблицы."""
+
+    content_type = "text/markdown; charset=utf-8"
+    file_name = "report.md"
 
     @staticmethod
     def __escape(value: object) -> str:

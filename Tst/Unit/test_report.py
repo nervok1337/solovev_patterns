@@ -15,6 +15,34 @@ from Src.Models.range_model import range_model
 from Src.Models.recipe_model import recipe_model
 
 
+def assert_text_response(report, result, content_type):
+    """Проверяет текстовый HTTP-ответ конкретного формата."""
+    # Подготовка выполнена вызывающим тестом
+
+    # Действие
+    response = report.create_response(result)
+
+    # Проверки
+    assert response.get_data(as_text=True) == result.text
+    assert response.content_type == content_type
+    assert "Content-Disposition" not in response.headers
+
+
+def assert_binary_response(report, result, content_type, file_name):
+    """Проверяет HTTP-ответ со скачиваемым отчётом."""
+    # Подготовка выполнена вызывающим тестом
+
+    # Действие
+    response = report.create_response(result)
+
+    # Проверки
+    assert response.get_data() == bytes(result.binary)
+    assert response.content_type == content_type
+    assert response.headers["Content-Disposition"] == (
+        f'attachment; filename="{file_name}"'
+    )
+
+
 def create_recipe():
     """Создаёт рецепт с двумя ингредиентами для проверки отчётов."""
     products = nomenclature_group_model.create("Продукты")
@@ -68,6 +96,7 @@ def test_text_report_builds_recipe_table():
         ),
     ]
     assert result.binary == []
+    assert_text_response(report, result, "text/plain; charset=utf-8")
 
 
 def test_csv_report_builds_recipe_table():
@@ -97,6 +126,7 @@ def test_csv_report_builds_recipe_table():
     ]
     assert result.text == ""
     assert result.binary != []
+    assert_binary_response(report, result, "text/csv; charset=utf-8", "report.csv")
 
 
 def test_markdown_report_builds_recipe_table():
@@ -128,6 +158,12 @@ def test_markdown_report_builds_recipe_table():
     ]
     assert result.text == ""
     assert result.binary != []
+    assert_binary_response(
+        report,
+        result,
+        "text/markdown; charset=utf-8",
+        "report.md",
+    )
 
 
 def test_xml_report_builds_recipe_document():
@@ -166,6 +202,7 @@ def test_xml_report_builds_recipe_document():
         },
     ]
     assert result.binary == []
+    assert_text_response(report, result, "application/xml; charset=utf-8")
 
 
 def test_html_report_builds_recipe_table():
@@ -191,3 +228,4 @@ def test_html_report_builds_recipe_table():
         "</tbody></table>"
     )
     assert result.binary == []
+    assert_text_response(report, result, "text/html; charset=utf-8")
