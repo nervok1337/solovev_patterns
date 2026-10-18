@@ -57,9 +57,15 @@ def test_text_report_builds_recipe_table():
     # Проверки
     assert isinstance(result, report_result_dto)
     assert result.text.splitlines() == [
-        "Код | Наименование | Брутто | Нетто",
-        f"{sugar.unique_code} | Сахар | 200.0 | 190.0",
-        f"{milk.unique_code} | Молоко | 250.0 | 240.0",
+        "gross_weight | id | name | net_weight | nomenclature | unique_code",
+        (
+            f"200.0 | {sugar.id} | Сахар | 190.0 | Сахар | "
+            f"{sugar.unique_code}"
+        ),
+        (
+            f"250.0 | {milk.id} | Молоко | 240.0 | Молоко | "
+            f"{milk.unique_code}"
+        ),
     ]
     assert result.binary == []
 
@@ -78,9 +84,16 @@ def test_csv_report_builds_recipe_table():
     # Проверки
     assert isinstance(result, report_result_dto)
     assert rows == [
-        ["Код", "Наименование", "Брутто", "Нетто"],
-        [sugar.unique_code, "Сахар", "200.0", "190.0"],
-        [milk.unique_code, "Молоко", "250.0", "240.0"],
+        [
+            "gross_weight",
+            "id",
+            "name",
+            "net_weight",
+            "nomenclature",
+            "unique_code",
+        ],
+        ["200.0", sugar.id, "Сахар", "190.0", "Сахар", sugar.unique_code],
+        ["250.0", milk.id, "Молоко", "240.0", "Молоко", milk.unique_code],
     ]
     assert result.text == ""
     assert result.binary != []
@@ -99,10 +112,19 @@ def test_markdown_report_builds_recipe_table():
     # Проверки
     assert isinstance(result, report_result_dto)
     assert content.splitlines() == [
-        "| Код | Наименование | Брутто | Нетто |",
-        "| --- | --- | ---: | ---: |",
-        f"| {sugar.unique_code} | Сахар | 200.0 | 190.0 |",
-        f"| {milk.unique_code} | Молоко | 250.0 | 240.0 |",
+        (
+            "| gross_weight | id | name | net_weight | nomenclature | "
+            "unique_code |"
+        ),
+        "| ---: | --- | --- | ---: | --- | --- |",
+        (
+            f"| 200.0 | {sugar.id} | Сахар | 190.0 | Сахар | "
+            f"{sugar.unique_code} |"
+        ),
+        (
+            f"| 250.0 | {milk.id} | Молоко | 240.0 | Молоко | "
+            f"{milk.unique_code} |"
+        ),
     ]
     assert result.text == ""
     assert result.binary != []
@@ -127,16 +149,20 @@ def test_xml_report_builds_recipe_document():
         for ingredient in root.findall("ingredient")
     ] == [
         {
-            "code": sugar.unique_code,
-            "name": "Сахар",
             "gross_weight": "200.0",
+            "id": sugar.id,
+            "name": "Сахар",
             "net_weight": "190.0",
+            "nomenclature": "Сахар",
+            "unique_code": sugar.unique_code,
         },
         {
-            "code": milk.unique_code,
-            "name": "Молоко",
             "gross_weight": "250.0",
+            "id": milk.id,
+            "name": "Молоко",
             "net_weight": "240.0",
+            "nomenclature": "Молоко",
+            "unique_code": milk.unique_code,
         },
     ]
     assert result.binary == []
@@ -155,12 +181,13 @@ def test_html_report_builds_recipe_table():
     assert isinstance(result, report_result_dto)
     assert result.text == (
         "<table><thead><tr>"
-        "<th>Код</th><th>Наименование</th><th>Брутто</th><th>Нетто</th>"
+        "<th>gross_weight</th><th>id</th><th>name</th>"
+        "<th>net_weight</th><th>nomenclature</th><th>unique_code</th>"
         "</tr></thead><tbody>"
-        f"<tr><td>{sugar.unique_code}</td><td>Сахар</td>"
-        "<td>200.0</td><td>190.0</td></tr>"
-        f"<tr><td>{milk.unique_code}</td><td>Молоко</td>"
-        "<td>250.0</td><td>240.0</td></tr>"
+        f"<tr><td>200.0</td><td>{sugar.id}</td><td>Сахар</td>"
+        f"<td>190.0</td><td>Сахар</td><td>{sugar.unique_code}</td></tr>"
+        f"<tr><td>250.0</td><td>{milk.id}</td><td>Молоко</td>"
+        f"<td>240.0</td><td>Молоко</td><td>{milk.unique_code}</td></tr>"
         "</tbody></table>"
     )
     assert result.binary == []
