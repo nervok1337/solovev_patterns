@@ -1,20 +1,7 @@
 from collections.abc import Mapping, Sequence, Set
-from dataclasses import dataclass
 
 from Src.Core.common import common
-
-
-@dataclass(frozen=True)
-class report_data:
-    """Унифицированные данные сущности для форматирования отчёта."""
-
-    root_name: str
-    row_name: str | None
-    name: str
-    keys: tuple[str, ...]
-    headers: tuple[str, ...]
-    rows: tuple[tuple[object, ...], ...]
-    numeric_columns: frozenset[int] = frozenset()
+from Src.Dtos.report_data_dto import report_data_dto
 
 
 def is_collection(value) -> bool:
@@ -56,7 +43,7 @@ def get_type_name(source) -> str:
     return source.__class__.__name__.removesuffix("_model")
 
 
-def create_report_data(source) -> report_data:
+def create_report_data(source) -> report_data_dto:
     """Формирует таблицу из актуальных публичных свойств объекта."""
     common.get_fields(source)
     collection_items = get_collection_items(source)
@@ -94,7 +81,7 @@ def create_report_data(source) -> report_data:
 
     name = getattr(source, "name", get_type_name(source))
     row_name = get_type_name(row_sources[0]) if collection_items else None
-    return report_data(
+    return report_data_dto(
         root_name=get_type_name(source),
         row_name=row_name,
         name=str(name),
