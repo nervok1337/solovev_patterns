@@ -28,7 +28,7 @@ class markdown_report(abstract_binary_report):
         ]
 
         for row in data.rows:
-            escaped_values = (self.__escape(value) for value in row)
+            escaped_values = (self.__escape(value) for value in row.values)
             rows.append(f"| {' | '.join(escaped_values)} |")
 
         result = report_result_dto()

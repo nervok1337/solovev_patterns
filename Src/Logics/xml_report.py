@@ -21,7 +21,7 @@ class xml_report(abstract_text_report):
                 if data.row_name is not None
                 else root
             )
-            for key, value in zip(data.keys, row):
+            for key, value in zip(data.keys, row.values):
                 ElementTree.SubElement(parent, key).text = str(value)
 
         result = report_result_dto()

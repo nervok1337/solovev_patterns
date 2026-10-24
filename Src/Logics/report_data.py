@@ -2,6 +2,7 @@ from collections.abc import Mapping, Sequence, Set
 
 from Src.Core.common import common
 from Src.Dtos.report_data_dto import report_data_dto
+from Src.Dtos.report_row_dto import report_row_dto
 
 
 def is_collection(value) -> bool:
@@ -58,24 +59,25 @@ def create_report_data(source) -> report_data_dto:
             if field not in keys:
                 keys.append(field)
 
-    rows = tuple(
-        tuple(
-            get_display_value(getattr(row_source, key))
-            if key in fields
-            else ""
-            for key in keys
-        )
-        for row_source, fields in zip(row_sources, fields_by_row)
-    )
+    rows: list[report_row_dto] = []
+    for row_source, fields in zip(row_sources, fields_by_row):
+        values = []
+        for key in keys:
+            value = ""
+            if key in fields:
+                value = get_display_value(getattr(row_source, key))
+            values.append(value)
+        rows.append(report_row_dto(values))
+
     numeric_columns = frozenset(
         index
         for index in range(len(keys))
         if rows
         and all(
-            isinstance(row[index], (int, float))
-            and not isinstance(row[index], bool)
+            isinstance(row.values[index], (int, float))
+            and not isinstance(row.values[index], bool)
             for row in rows
-            if row[index] != ""
+            if row.values[index] != ""
         )
     )
 
@@ -85,8 +87,8 @@ def create_report_data(source) -> report_data_dto:
         root_name=get_type_name(source),
         row_name=row_name,
         name=str(name),
-        keys=tuple(keys),
-        headers=tuple(keys),
+        keys=keys,
+        headers=keys.copy(),
         rows=rows,
         numeric_columns=numeric_columns,
     )

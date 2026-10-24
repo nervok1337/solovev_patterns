@@ -3,9 +3,11 @@ from io import StringIO
 from xml.etree import ElementTree
 
 from Src.Dtos.report_result_dto import report_result_dto
+from Src.Dtos.report_row_dto import report_row_dto
 from Src.Logics.csv_report import csv_report
 from Src.Logics.html_report import html_report
 from Src.Logics.markdown_report import markdown_report
+from Src.Logics.report_data import create_report_data
 from Src.Logics.text_report import text_report
 from Src.Logics.xml_report import xml_report
 from Src.Models.ingredient_model import ingredient_model
@@ -59,6 +61,52 @@ def create_recipe():
     )
     recipe = recipe_model.create("Карамель", (sugar, milk))
     return recipe, sugar, milk
+
+
+def test_report_data_aligns_rows_with_different_fields():
+    """Проверяет порядок ячеек DTO и пропуски полей у вложенного рецепта."""
+    # Подготовка
+    recipe, sugar, milk = create_recipe()
+    base_recipe = recipe_model.create("Основа", [milk])
+    recipe.remove_ingredient(milk)
+    recipe.add_ingredient(base_recipe)
+
+    # Действие
+    data = create_report_data(recipe)
+
+    # Проверки
+    assert data.keys == [
+        "gross_weight", "id", "name", "net_weight", "nomenclature", "unique_code",
+    ]
+    assert data.headers == data.keys
+    assert len(data.rows) == 2
+    assert isinstance(data.rows[0], report_row_dto)
+    assert isinstance(data.rows[1], report_row_dto)
+    assert data.rows[0].values == [
+        200.0, sugar.id, "Сахар", 190.0, "Сахар", sugar.unique_code,
+    ]
+    assert data.rows[1].values == [
+        250.0, base_recipe.id, "Основа", 240.0, "", base_recipe.unique_code,
+    ]
+    assert data.numeric_columns == frozenset([0, 3])
+
+
+def test_report_data_builds_row_dto_for_single_model():
+    """Проверяет преобразование отдельной модели в одну строку DTO."""
+    # Подготовка
+    recipe, sugar, milk = create_recipe()
+
+    # Действие
+    data = create_report_data(sugar)
+
+    # Проверки
+    assert data.root_name == "ingredient"
+    assert data.row_name is None
+    assert len(data.rows) == 1
+    assert isinstance(data.rows[0], report_row_dto)
+    assert data.rows[0].values == [
+        200.0, sugar.id, "Сахар", 190.0, "Сахар", sugar.unique_code,
+    ]
 
 
 def test_text_report_builds_recipe_table():

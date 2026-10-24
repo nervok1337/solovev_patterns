@@ -18,7 +18,8 @@ class csv_report(abstract_binary_report):
         stream = StringIO(newline="")
         writer = csv.writer(stream, lineterminator="\n")
         writer.writerow(data.headers)
-        writer.writerows(data.rows)
+        for row in data.rows:
+            writer.writerow(row.values)
 
         result = report_result_dto()
         content = stream.getvalue().rstrip("\n")

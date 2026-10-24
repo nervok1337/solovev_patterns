@@ -16,7 +16,7 @@ class html_report(abstract_text_report):
         rows = []
 
         for row in data.rows:
-            cells = "".join(f"<td>{escape(str(value))}</td>" for value in row)
+            cells = "".join(f"<td>{escape(str(value))}</td>" for value in row.values)
             rows.append(f"<tr>{cells}</tr>")
 
         headers = "".join(
