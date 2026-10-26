@@ -32,4 +32,4 @@ class convert_factory(abstract_convert_factory):
             if convertor_type is not None:
                 return convertor_type()
 
-        return reference_convertor()
+        return reference_convertor(self, ancestors)
