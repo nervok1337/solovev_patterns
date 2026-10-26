@@ -57,6 +57,8 @@ class reference_convertor(abstract_covertor):
 
         result: dict[str, object] = {}
         for name, value in fields.items():
+            if not isinstance(name, str):
+                raise argument_exception("Имя поля словаря должно быть строкой")
             convertor = self.__factory.create(value, path)
             result.update(convertor.convert(value, name))
         return result

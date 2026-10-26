@@ -1,15 +1,21 @@
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
+from pathlib import Path
 
 import pytest
 
 from Src.Core.validator import argument_exception
+from Src.Logics.basic_convertor import basic_convertor
 from Src.Logics.convert_factory import convert_factory
+from Src.Logics.datetime_convertor import datetime_convertor
+from Src.Logics.reference_convertor import reference_convertor
+from Src.Logics.storage_manager import storage_manager
 from Src.Models.ingredient_model import ingredient_model
 from Src.Models.nomenclature_group_model import nomenclature_group_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
 from Src.Models.recipe_model import recipe_model
+from Src.Models.settings_model import settings_model
 
 
 class dated_group_model(nomenclature_group_model):
@@ -37,6 +43,157 @@ class dated_group_model(nomenclature_group_model):
         return self.__related_group
 
 
+@pytest.fixture
+def populated_storage(monkeypatch):
+    """Создаёт начальные данные, изолируя singleton от остальных тестов."""
+    monkeypatch.delattr(storage_manager, "instance", raising=False)
+    storage = storage_manager()
+    storage.convert(settings_model())
+    yield storage
+    delattr(storage_manager, "instance")
+
+
+@pytest.mark.parametrize(
+    ["source", "expected_type"],
+    [
+        [12, basic_convertor],
+        [0.5, basic_convertor],
+        ["Сахар", basic_convertor],
+        [False, basic_convertor],
+        [None, basic_convertor],
+        [datetime(2026, 10, 26), datetime_convertor],
+        [date(2026, 10, 26), datetime_convertor],
+        [time(12, 30), datetime_convertor],
+        [{}, reference_convertor],
+        [[], reference_convertor],
+        [object(), reference_convertor],
+    ],
+)
+def test_instance_convert_factory_create_selected_convertor(source, expected_type):
+    """<summary>Проверяет, что фабрика возвращает обработчик нужного типа.</summary>"""
+    # Подготовка
+    factory = convert_factory()
+
+    # Действие
+    result = factory.create(source)
+
+    # Проверки
+    assert isinstance(result, expected_type)
+
+
+def test_instance_convert_factory_create_without_reading_properties():
+    """<summary>Проверяет, что выбор обработчика не запускает преобразование.</summary>"""
+    # Подготовка
+    class unreadable_model:
+        """Запрещает чтение свойства во время выбора конвертера."""
+
+        @property
+        def value(self):
+            """Вызывает ошибку при попытке прочитать исходное значение."""
+            raise AssertionError("Фабрика не должна читать свойства объекта")
+
+    source = unreadable_model()
+    factory = convert_factory()
+
+    # Действие
+    result = factory.create(source)
+
+    # Проверки
+    assert isinstance(result, reference_convertor)
+
+
+def test_instance_convert_factory_create_inherited_type():
+    """<summary>Проверяет выбор конвертера для наследника зарегистрированного типа.</summary>"""
+    # Подготовка
+    class custom_string(str):
+        """Представляет пользовательский строковый тип."""
+
+    source = custom_string("Сахар")
+    factory = convert_factory()
+
+    # Действие
+    result = factory.create(source)
+
+    # Проверки
+    assert isinstance(result, basic_convertor)
+    assert result.convert(source, "name") == {"name": "Сахар"}
+
+
+def test_equals_convert_factory_create_delegated_nested_values():
+    """<summary>Проверяет применение выбранного обработчика к полям и спискам.</summary>"""
+    # Подготовка
+    class marked_datetime_convertor(datetime_convertor):
+        """Помечает значение, прошедшее через подставленный обработчик."""
+
+        def convert(self, source, field_name=None):
+            """Возвращает маркер вместо обычного представления даты."""
+            key = "value" if field_name is None else field_name
+            return {key: "selected-datetime-convertor"}
+
+    class custom_factory(convert_factory):
+        """Подменяет обработчик даты через общий интерфейс фабрики."""
+
+        def create(self, source, ancestors=None):
+            """Выбирает тестовый конвертер дат и обычные остальные конвертеры."""
+            if isinstance(source, datetime):
+                return marked_datetime_convertor()
+            return super().create(source, ancestors)
+
+    moment = datetime(2026, 10, 26, 12, 30)
+    source = {"created_at": moment, "items": [moment]}
+    factory = custom_factory()
+
+    # Действие
+    result = factory.create(source).convert(source)
+
+    # Проверки
+    assert result == {
+        "created_at": "selected-datetime-convertor",
+        "items": ["selected-datetime-convertor"],
+    }
+
+
+def test_equals_convert_factory_create_root_collection():
+    """<summary>Проверяет преобразование коллекции, переданной прямо в фабрику.</summary>"""
+    # Подготовка
+    source = [0, False, None, datetime(2026, 10, 26, 12, 30), []]
+    factory = convert_factory()
+
+    # Действие
+    result = factory.create(source).convert(source)
+
+    # Проверки
+    assert result == {"value": [0, False, None, "2026-10-26T12:30:00", []]}
+
+
+def test_equals_convert_factory_create_fields_named_value():
+    """<summary>Проверяет сохранение поля value на нескольких уровнях вложенности.</summary>"""
+    # Подготовка
+    source = {"value": {"value": [0, {"value": False}]}}
+    factory = convert_factory()
+
+    # Действие
+    result = factory.create(source).convert(source)
+
+    # Проверки
+    assert result == source
+
+
+@pytest.mark.parametrize("key", [None, 1])
+def test_argument_exception_convert_factory_create_non_string_field_name(key):
+    """<summary>Проверяет отклонение ключа, который нельзя считать именем поля.</summary>"""
+    # Подготовка
+    source = {key: "Сахар"}
+    factory = convert_factory()
+
+    # Действие
+    with pytest.raises(argument_exception) as error:
+        factory.create(source).convert(source)
+
+    # Проверки
+    assert "Имя поля словаря должно быть строкой" in str(error.value)
+
+
 def test_equals_convert_factory_create_mixed_fields():
     """<summary>Проверяет объединение простых полей, даты и вложенного объекта.</summary>"""
     # Подготовка
@@ -49,7 +206,7 @@ def test_equals_convert_factory_create_mixed_fields():
     factory = convert_factory()
 
     # Действие
-    result = factory.create(source)
+    result = factory.create(source).convert(source)
 
     # Проверки
     assert result == {
@@ -78,7 +235,7 @@ def test_equals_convert_factory_create_nested_recipe():
     factory = convert_factory()
 
     # Действие
-    result = factory.create(source)
+    result = factory.create(source).convert(source)
 
     # Проверки
     assert result["id"] == source.id
@@ -121,7 +278,7 @@ def test_equals_convert_factory_create_self_reference():
     factory = convert_factory()
 
     # Действие
-    result = factory.create(source)
+    result = factory.create(source).convert(source)
 
     # Проверки
     assert result == {
@@ -141,8 +298,8 @@ def test_equals_convert_factory_create_independent_results():
     factory = convert_factory()
 
     # Действие
-    first_result = factory.create(unit)
-    second_result = factory.create(group)
+    first_result = factory.create(unit).convert(unit)
+    second_result = factory.create(group).convert(group)
 
     # Проверки
     assert second_result == {
@@ -161,7 +318,51 @@ def test_argument_exception_convert_factory_create_missing_source():
 
     # Действие
     with pytest.raises(argument_exception) as error:
-        factory.create(None)
+        factory.create(None).convert(None)
 
     # Проверки
     assert "Некорректно переданы аргументы" in str(error.value)
+
+
+def test_equals_convert_factory_create_full_storage(populated_storage):
+    """<summary>Проверяет выгрузку всех коллекций и состояния хранилища.</summary>"""
+    # Подготовка
+    source = populated_storage
+    factory = convert_factory()
+
+    # Действие
+    result = factory.create(source).convert(source)
+
+    # Проверки
+    assert set(result) == {
+        "ranges", "groups", "warehouses", "nomenclatures", "recipes", "is_loaded",
+    }
+    assert result["is_loaded"] is True
+    for name in ["ranges", "groups", "warehouses", "nomenclatures", "recipes"]:
+        original_items = getattr(source, name)
+        assert len(result[name]) == len(original_items)
+        assert {item["unique_code"] for item in result[name]} == {
+            item.unique_code for item in original_items
+        }
+    assert result["recipes"][0]["name"] == "Молочная карамель"
+    assert len(result["recipes"][0]["ingredients"]) == 2
+
+
+def test_equals_convert_factory_storage_json_complete_collections():
+    """<summary>Проверяет состав единого JSON, приложенного к результату работы.</summary>"""
+    # Подготовка
+    file_path = Path(__file__).resolve().parents[2] / "Docs/Serialization/storage.json"
+
+    # Действие
+    result = json.loads(file_path.read_text(encoding="utf-8"))
+
+    # Проверки
+    assert set(result) == {
+        "ranges", "groups", "warehouses", "nomenclatures", "recipes", "is_loaded",
+    }
+    assert result["is_loaded"] is True
+    assert len(result["ranges"]) == 5
+    assert len(result["groups"]) == 3
+    assert len(result["warehouses"]) == 3
+    assert len(result["nomenclatures"]) == 4
+    assert len(result["recipes"]) == 1
