@@ -1,19 +1,19 @@
 {
     "groups": [
         {
-            "id": "a16e4d84877b4b259669d0c7b5b85eb2",
+            "id": "0d173f34624046c5ba9487d0f3e24794",
             "name": "Продукты",
-            "unique_code": "a16e4d84877b4b259669d0c7b5b85eb2"
+            "unique_code": "0d173f34624046c5ba9487d0f3e24794"
         },
         {
-            "id": "adbaa49749ca47d28624afcc15f0654e",
+            "id": "351e8594584f42898dc19b2176ba6a09",
             "name": "Напитки",
-            "unique_code": "adbaa49749ca47d28624afcc15f0654e"
+            "unique_code": "351e8594584f42898dc19b2176ba6a09"
         },
         {
-            "id": "8f8b126257144a7497156dc3576fbf79",
+            "id": "32b70633f786411184c7f9e4bd9af794",
             "name": "Упаковка",
-            "unique_code": "8f8b126257144a7497156dc3576fbf79"
+            "unique_code": "32b70633f786411184c7f9e4bd9af794"
         }
     ],
     "is_loaded": true,
@@ -21,286 +21,260 @@
         {
             "full_name": "Вода питьевая",
             "group": {
-                "id": "adbaa49749ca47d28624afcc15f0654e",
+                "id": "351e8594584f42898dc19b2176ba6a09",
                 "name": "Напитки",
-                "unique_code": "adbaa49749ca47d28624afcc15f0654e"
+                "unique_code": "351e8594584f42898dc19b2176ba6a09"
             },
-            "id": "3d24fdcf365b4aeeb6622acaeb6885c2",
+            "id": "d13df606d713427f855c7ee8c4eb8b9e",
             "name": "Вода",
             "range": {
-                "base_range": {
-                    "unique_code": "1ed0e3a256dc4ed8ade87f7e884b9688"
-                },
+                "base_range": null,
                 "conversion_factor": 1.0,
-                "id": "1ed0e3a256dc4ed8ade87f7e884b9688",
+                "id": "cf9bc9c11843434680f9860fd491845c",
                 "name": "Литр",
-                "unique_code": "1ed0e3a256dc4ed8ade87f7e884b9688"
+                "unique_code": "cf9bc9c11843434680f9860fd491845c"
             },
-            "unique_code": "3d24fdcf365b4aeeb6622acaeb6885c2"
+            "unique_code": "d13df606d713427f855c7ee8c4eb8b9e"
         },
         {
             "full_name": "Молоко питьевое",
             "group": {
-                "id": "a16e4d84877b4b259669d0c7b5b85eb2",
+                "id": "0d173f34624046c5ba9487d0f3e24794",
                 "name": "Продукты",
-                "unique_code": "a16e4d84877b4b259669d0c7b5b85eb2"
+                "unique_code": "0d173f34624046c5ba9487d0f3e24794"
             },
-            "id": "9b8b8f7429094bcd92b6db3c6464edca",
+            "id": "7320870a3d624785b9fa469f14a29207",
             "name": "Молоко",
             "range": {
-                "base_range": {
-                    "unique_code": "1ed0e3a256dc4ed8ade87f7e884b9688"
-                },
+                "base_range": null,
                 "conversion_factor": 1.0,
-                "id": "1ed0e3a256dc4ed8ade87f7e884b9688",
+                "id": "cf9bc9c11843434680f9860fd491845c",
                 "name": "Литр",
-                "unique_code": "1ed0e3a256dc4ed8ade87f7e884b9688"
+                "unique_code": "cf9bc9c11843434680f9860fd491845c"
             },
-            "unique_code": "9b8b8f7429094bcd92b6db3c6464edca"
+            "unique_code": "7320870a3d624785b9fa469f14a29207"
         },
         {
             "full_name": "Сахар-песок",
             "group": {
-                "id": "a16e4d84877b4b259669d0c7b5b85eb2",
+                "id": "0d173f34624046c5ba9487d0f3e24794",
                 "name": "Продукты",
-                "unique_code": "a16e4d84877b4b259669d0c7b5b85eb2"
+                "unique_code": "0d173f34624046c5ba9487d0f3e24794"
             },
-            "id": "b65b96e5a02443afaf78c5fe33807dff",
+            "id": "760ab203688b41008eb5ca2ae685704c",
             "name": "Сахар",
             "range": {
-                "base_range": {
-                    "unique_code": "599a6eb2ce844da0a9a4a805f39717b7"
-                },
+                "base_range": null,
                 "conversion_factor": 1.0,
-                "id": "599a6eb2ce844da0a9a4a805f39717b7",
+                "id": "097c1c3d110a431f922eb708d5e8f2fc",
                 "name": "Килограмм",
-                "unique_code": "599a6eb2ce844da0a9a4a805f39717b7"
+                "unique_code": "097c1c3d110a431f922eb708d5e8f2fc"
             },
-            "unique_code": "b65b96e5a02443afaf78c5fe33807dff"
+            "unique_code": "760ab203688b41008eb5ca2ae685704c"
         },
         {
             "full_name": "Пакет упаковочный",
             "group": {
-                "id": "8f8b126257144a7497156dc3576fbf79",
+                "id": "32b70633f786411184c7f9e4bd9af794",
                 "name": "Упаковка",
-                "unique_code": "8f8b126257144a7497156dc3576fbf79"
+                "unique_code": "32b70633f786411184c7f9e4bd9af794"
             },
-            "id": "91e05d6d87e84c359621cd2098495427",
+            "id": "783c6634ebb04be4aa3c69e103eba1d7",
             "name": "Пакет",
             "range": {
-                "base_range": {
-                    "unique_code": "360ac947a08b40fe8f8d87b83282f3a8"
-                },
+                "base_range": null,
                 "conversion_factor": 1.0,
-                "id": "360ac947a08b40fe8f8d87b83282f3a8",
+                "id": "c6a60a023b2f467585520c57162ae1bd",
                 "name": "Штука",
-                "unique_code": "360ac947a08b40fe8f8d87b83282f3a8"
+                "unique_code": "c6a60a023b2f467585520c57162ae1bd"
             },
-            "unique_code": "91e05d6d87e84c359621cd2098495427"
+            "unique_code": "783c6634ebb04be4aa3c69e103eba1d7"
         }
     ],
     "ranges": [
         {
-            "base_range": {
-                "unique_code": "360ac947a08b40fe8f8d87b83282f3a8"
-            },
+            "base_range": null,
             "conversion_factor": 1.0,
-            "id": "360ac947a08b40fe8f8d87b83282f3a8",
+            "id": "c6a60a023b2f467585520c57162ae1bd",
             "name": "Штука",
-            "unique_code": "360ac947a08b40fe8f8d87b83282f3a8"
+            "unique_code": "c6a60a023b2f467585520c57162ae1bd"
         },
         {
-            "base_range": {
-                "unique_code": "599a6eb2ce844da0a9a4a805f39717b7"
-            },
+            "base_range": null,
             "conversion_factor": 1.0,
-            "id": "599a6eb2ce844da0a9a4a805f39717b7",
+            "id": "097c1c3d110a431f922eb708d5e8f2fc",
             "name": "Килограмм",
-            "unique_code": "599a6eb2ce844da0a9a4a805f39717b7"
+            "unique_code": "097c1c3d110a431f922eb708d5e8f2fc"
         },
         {
             "base_range": {
-                "base_range": {
-                    "unique_code": "599a6eb2ce844da0a9a4a805f39717b7"
-                },
+                "base_range": null,
                 "conversion_factor": 1.0,
-                "id": "599a6eb2ce844da0a9a4a805f39717b7",
+                "id": "097c1c3d110a431f922eb708d5e8f2fc",
                 "name": "Килограмм",
-                "unique_code": "599a6eb2ce844da0a9a4a805f39717b7"
+                "unique_code": "097c1c3d110a431f922eb708d5e8f2fc"
             },
             "conversion_factor": 0.001,
-            "id": "785ce1070975469dac0d38bb59dc908c",
+            "id": "66fa6e79918146d68ad00f68c785ce0c",
             "name": "Грамм",
-            "unique_code": "785ce1070975469dac0d38bb59dc908c"
+            "unique_code": "66fa6e79918146d68ad00f68c785ce0c"
         },
         {
-            "base_range": {
-                "unique_code": "1ed0e3a256dc4ed8ade87f7e884b9688"
-            },
+            "base_range": null,
             "conversion_factor": 1.0,
-            "id": "1ed0e3a256dc4ed8ade87f7e884b9688",
+            "id": "cf9bc9c11843434680f9860fd491845c",
             "name": "Литр",
-            "unique_code": "1ed0e3a256dc4ed8ade87f7e884b9688"
+            "unique_code": "cf9bc9c11843434680f9860fd491845c"
         },
         {
             "base_range": {
-                "base_range": {
-                    "unique_code": "1ed0e3a256dc4ed8ade87f7e884b9688"
-                },
+                "base_range": null,
                 "conversion_factor": 1.0,
-                "id": "1ed0e3a256dc4ed8ade87f7e884b9688",
+                "id": "cf9bc9c11843434680f9860fd491845c",
                 "name": "Литр",
-                "unique_code": "1ed0e3a256dc4ed8ade87f7e884b9688"
+                "unique_code": "cf9bc9c11843434680f9860fd491845c"
             },
             "conversion_factor": 0.001,
-            "id": "e1fc7e87a034490e8ceb732a60260abb",
+            "id": "36adb67060f24761a01c62891c67cd67",
             "name": "Миллилитр",
-            "unique_code": "e1fc7e87a034490e8ceb732a60260abb"
+            "unique_code": "36adb67060f24761a01c62891c67cd67"
         }
     ],
     "recipes": [
         {
             "gross_weight": 510.0,
-            "id": "91c9a178768d4e449e45686822861193",
+            "id": "b7e54d491c914cfe8819d9913db4e2c2",
             "ingredients": [
                 {
                     "gross_weight": 500.0,
-                    "id": "f4ba5c8a2a00479e9bd77493a68bd90b",
+                    "id": "ad40615f8188419e915c860f2013e352",
                     "ingredients": [
                         {
                             "gross_weight": 200.0,
-                            "id": "1cf1a3cfd2e54741b7a8d823ddc9ecf6",
+                            "id": "77eea710e5864aadba78ae89e9dedaca",
                             "name": "Сахар",
                             "net_weight": 200.0,
                             "nomenclature": {
                                 "full_name": "Сахар-песок",
                                 "group": {
-                                    "id": "a16e4d84877b4b259669d0c7b5b85eb2",
+                                    "id": "0d173f34624046c5ba9487d0f3e24794",
                                     "name": "Продукты",
-                                    "unique_code": "a16e4d84877b4b259669d0c7b5b85eb2"
+                                    "unique_code": "0d173f34624046c5ba9487d0f3e24794"
                                 },
-                                "id": "b65b96e5a02443afaf78c5fe33807dff",
+                                "id": "760ab203688b41008eb5ca2ae685704c",
                                 "name": "Сахар",
                                 "range": {
-                                    "base_range": {
-                                        "unique_code": "599a6eb2ce844da0a9a4a805f39717b7"
-                                    },
+                                    "base_range": null,
                                     "conversion_factor": 1.0,
-                                    "id": "599a6eb2ce844da0a9a4a805f39717b7",
+                                    "id": "097c1c3d110a431f922eb708d5e8f2fc",
                                     "name": "Килограмм",
-                                    "unique_code": "599a6eb2ce844da0a9a4a805f39717b7"
+                                    "unique_code": "097c1c3d110a431f922eb708d5e8f2fc"
                                 },
-                                "unique_code": "b65b96e5a02443afaf78c5fe33807dff"
+                                "unique_code": "760ab203688b41008eb5ca2ae685704c"
                             },
-                            "unique_code": "1cf1a3cfd2e54741b7a8d823ddc9ecf6"
+                            "unique_code": "77eea710e5864aadba78ae89e9dedaca"
                         },
                         {
                             "gross_weight": 250.0,
-                            "id": "5da9b015195d48ff99c6884676c95e77",
+                            "id": "a1fe321c220d45729cd4877523696ea6",
                             "name": "Молоко",
                             "net_weight": 250.0,
                             "nomenclature": {
                                 "full_name": "Молоко питьевое",
                                 "group": {
-                                    "id": "a16e4d84877b4b259669d0c7b5b85eb2",
+                                    "id": "0d173f34624046c5ba9487d0f3e24794",
                                     "name": "Продукты",
-                                    "unique_code": "a16e4d84877b4b259669d0c7b5b85eb2"
+                                    "unique_code": "0d173f34624046c5ba9487d0f3e24794"
                                 },
-                                "id": "9b8b8f7429094bcd92b6db3c6464edca",
+                                "id": "7320870a3d624785b9fa469f14a29207",
                                 "name": "Молоко",
                                 "range": {
-                                    "base_range": {
-                                        "unique_code": "1ed0e3a256dc4ed8ade87f7e884b9688"
-                                    },
+                                    "base_range": null,
                                     "conversion_factor": 1.0,
-                                    "id": "1ed0e3a256dc4ed8ade87f7e884b9688",
+                                    "id": "cf9bc9c11843434680f9860fd491845c",
                                     "name": "Литр",
-                                    "unique_code": "1ed0e3a256dc4ed8ade87f7e884b9688"
+                                    "unique_code": "cf9bc9c11843434680f9860fd491845c"
                                 },
-                                "unique_code": "9b8b8f7429094bcd92b6db3c6464edca"
+                                "unique_code": "7320870a3d624785b9fa469f14a29207"
                             },
-                            "unique_code": "5da9b015195d48ff99c6884676c95e77"
+                            "unique_code": "a1fe321c220d45729cd4877523696ea6"
                         },
                         {
                             "gross_weight": 50.0,
-                            "id": "8f5d646d9c934515a36f7923955dcf4e",
+                            "id": "f7628ec2f57c4ebf86e5f9c309579484",
                             "name": "Вода",
                             "net_weight": 50.0,
                             "nomenclature": {
                                 "full_name": "Вода питьевая",
                                 "group": {
-                                    "id": "adbaa49749ca47d28624afcc15f0654e",
+                                    "id": "351e8594584f42898dc19b2176ba6a09",
                                     "name": "Напитки",
-                                    "unique_code": "adbaa49749ca47d28624afcc15f0654e"
+                                    "unique_code": "351e8594584f42898dc19b2176ba6a09"
                                 },
-                                "id": "3d24fdcf365b4aeeb6622acaeb6885c2",
+                                "id": "d13df606d713427f855c7ee8c4eb8b9e",
                                 "name": "Вода",
                                 "range": {
-                                    "base_range": {
-                                        "unique_code": "1ed0e3a256dc4ed8ade87f7e884b9688"
-                                    },
+                                    "base_range": null,
                                     "conversion_factor": 1.0,
-                                    "id": "1ed0e3a256dc4ed8ade87f7e884b9688",
+                                    "id": "cf9bc9c11843434680f9860fd491845c",
                                     "name": "Литр",
-                                    "unique_code": "1ed0e3a256dc4ed8ade87f7e884b9688"
+                                    "unique_code": "cf9bc9c11843434680f9860fd491845c"
                                 },
-                                "unique_code": "3d24fdcf365b4aeeb6622acaeb6885c2"
+                                "unique_code": "d13df606d713427f855c7ee8c4eb8b9e"
                             },
-                            "unique_code": "8f5d646d9c934515a36f7923955dcf4e"
+                            "unique_code": "f7628ec2f57c4ebf86e5f9c309579484"
                         }
                     ],
                     "name": "Карамельная основа",
                     "net_weight": 500.0,
-                    "unique_code": "f4ba5c8a2a00479e9bd77493a68bd90b"
+                    "unique_code": "ad40615f8188419e915c860f2013e352"
                 },
                 {
                     "gross_weight": 10.0,
-                    "id": "9aa7b99a25074f4c9ce7b648bfb3736d",
+                    "id": "0db664ea540444a8ac01bd8a3124e28c",
                     "name": "Пакет",
                     "net_weight": 0.0,
                     "nomenclature": {
                         "full_name": "Пакет упаковочный",
                         "group": {
-                            "id": "8f8b126257144a7497156dc3576fbf79",
+                            "id": "32b70633f786411184c7f9e4bd9af794",
                             "name": "Упаковка",
-                            "unique_code": "8f8b126257144a7497156dc3576fbf79"
+                            "unique_code": "32b70633f786411184c7f9e4bd9af794"
                         },
-                        "id": "91e05d6d87e84c359621cd2098495427",
+                        "id": "783c6634ebb04be4aa3c69e103eba1d7",
                         "name": "Пакет",
                         "range": {
-                            "base_range": {
-                                "unique_code": "360ac947a08b40fe8f8d87b83282f3a8"
-                            },
+                            "base_range": null,
                             "conversion_factor": 1.0,
-                            "id": "360ac947a08b40fe8f8d87b83282f3a8",
+                            "id": "c6a60a023b2f467585520c57162ae1bd",
                             "name": "Штука",
-                            "unique_code": "360ac947a08b40fe8f8d87b83282f3a8"
+                            "unique_code": "c6a60a023b2f467585520c57162ae1bd"
                         },
-                        "unique_code": "91e05d6d87e84c359621cd2098495427"
+                        "unique_code": "783c6634ebb04be4aa3c69e103eba1d7"
                     },
-                    "unique_code": "9aa7b99a25074f4c9ce7b648bfb3736d"
+                    "unique_code": "0db664ea540444a8ac01bd8a3124e28c"
                 }
             ],
             "name": "Молочная карамель",
             "net_weight": 500.0,
-            "unique_code": "91c9a178768d4e449e45686822861193"
+            "unique_code": "b7e54d491c914cfe8819d9913db4e2c2"
         }
     ],
     "warehouses": [
         {
-            "id": "83ca502e973f4ee68dad4df08dddfb30",
+            "id": "60a6e5ffa68e4964a83a9c49e82ea94f",
             "name": "Основной склад",
-            "unique_code": "83ca502e973f4ee68dad4df08dddfb30"
+            "unique_code": "60a6e5ffa68e4964a83a9c49e82ea94f"
         },
         {
-            "id": "7e9d432c83bb43fab93874b3640c8052",
+            "id": "99e6428ad93e4e99a0c6fa7b66e19580",
             "name": "Кухня",
-            "unique_code": "7e9d432c83bb43fab93874b3640c8052"
+            "unique_code": "99e6428ad93e4e99a0c6fa7b66e19580"
         },
         {
-            "id": "de70b32e906942ebacacd2f9ec53b044",
+            "id": "06fe8dc1258b4964be14eea0badc6dda",
             "name": "Бар",
-            "unique_code": "de70b32e906942ebacacd2f9ec53b044"
+            "unique_code": "06fe8dc1258b4964be14eea0badc6dda"
         }
     ]
 }

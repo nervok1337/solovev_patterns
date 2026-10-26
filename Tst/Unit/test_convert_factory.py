@@ -8,6 +8,7 @@ from Src.Core.validator import argument_exception
 from Src.Logics.basic_convertor import basic_convertor
 from Src.Logics.convert_factory import convert_factory
 from Src.Logics.datetime_convertor import datetime_convertor
+from Src.Logics.range_convertor import range_convertor
 from Src.Logics.reference_convertor import reference_convertor
 from Src.Logics.storage_manager import storage_manager
 from Src.Models.ingredient_model import ingredient_model
@@ -41,6 +42,15 @@ class dated_group_model(nomenclature_group_model):
     def related_group(self) -> nomenclature_group_model:
         """Возвращает связанную группу."""
         return self.__related_group
+
+
+def restore_range(data: dict) -> range_model:
+    """Восстанавливает тестовую единицу из вложенных данных без поиска по ID."""
+    base_data = data["base_range"]
+    base_range = None if base_data is None else restore_range(base_data)
+    result = range_model.create(data["name"], data["conversion_factor"], base_range)
+    result.unique_code = data["unique_code"]
+    return result
 
 
 @pytest.fixture
@@ -117,6 +127,21 @@ def test_instance_convert_factory_create_inherited_type():
     # Проверки
     assert isinstance(result, basic_convertor)
     assert result.convert(source, "name") == {"name": "Сахар"}
+
+
+@pytest.mark.parametrize("derived", [False, True])
+def test_instance_convert_factory_create_range_convertor(derived):
+    """<summary>Проверяет выбор специального конвертера единиц измерения.</summary>"""
+    # Подготовка
+    kilogram = range_model.create("Килограмм", 1)
+    source = range_model.create("Грамм", 0.001, kilogram) if derived else kilogram
+    factory = convert_factory()
+
+    # Действие
+    result = factory.create(source)
+
+    # Проверки
+    assert isinstance(result, range_convertor)
 
 
 def test_equals_convert_factory_create_delegated_nested_values():
@@ -266,13 +291,13 @@ def test_equals_convert_factory_create_nested_recipe():
             "name": "Килограмм",
             "unique_code": unit.unique_code,
             "conversion_factor": 1.0,
-            "base_range": {"unique_code": unit.unique_code},
+            "base_range": None,
         },
     }
 
 
-def test_equals_convert_factory_create_self_reference():
-    """<summary>Проверяет объединение простых полей с представлением цикла.</summary>"""
+def test_equals_convert_factory_create_base_unit():
+    """<summary>Проверяет полную выгрузку базовой единицы с base_range null.</summary>"""
     # Подготовка
     source = range_model.create("Килограмм", 1)
     factory = convert_factory()
@@ -286,8 +311,39 @@ def test_equals_convert_factory_create_self_reference():
         "name": "Килограмм",
         "unique_code": source.unique_code,
         "conversion_factor": 1.0,
-        "base_range": {"unique_code": source.unique_code},
+        "base_range": None,
     }
+    assert source.base_range is source
+
+
+@pytest.mark.parametrize("derived", [False, True])
+def test_equals_convert_factory_range_restored_without_id_lookup(derived):
+    """<summary>Проверяет восстановление единицы и её базы из полного JSON.</summary>"""
+    # Подготовка
+    kilogram = range_model.create("Килограмм", 1)
+    source = range_model.create("Грамм", 0.001, kilogram) if derived else kilogram
+    factory = convert_factory()
+    data = json.loads(json.dumps(factory.create(source).convert(source)))
+
+    # Действие
+    restored = restore_range(data)
+
+    # Проверки
+    assert restored is not source
+    assert restored.name == source.name
+    assert restored.conversion_factor == source.conversion_factor
+    assert restored.base_range.name == "Килограмм"
+    assert restored.base_range.base_range is restored.base_range
+    assert factory.create(restored).convert(restored) == data
+    assert kilogram.base_range is kilogram
+    if derived:
+        assert restored.base_range is not restored
+        assert source.base_range is kilogram
+        assert data["base_range"]["name"] == "Килограмм"
+        assert data["base_range"]["base_range"] is None
+    else:
+        assert restored.base_range is restored
+        assert data["base_range"] is None
 
 
 def test_equals_convert_factory_create_independent_results():
@@ -308,7 +364,7 @@ def test_equals_convert_factory_create_independent_results():
         "unique_code": group.unique_code,
     }
     assert first_result["name"] == "Килограмм"
-    assert first_result["base_range"] == {"unique_code": unit.unique_code}
+    assert first_result["base_range"] is None
 
 
 def test_argument_exception_convert_factory_create_missing_source():
@@ -366,3 +422,19 @@ def test_equals_convert_factory_storage_json_complete_collections():
     assert len(result["warehouses"]) == 3
     assert len(result["nomenclatures"]) == 4
     assert len(result["recipes"]) == 1
+    pending = [result]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, dict):
+            assert set(value) != {"unique_code"}
+            if "base_range" in value:
+                base = value["base_range"]
+                if base is None:
+                    assert value["conversion_factor"] == 1
+                else:
+                    assert set(base) == {
+                        "id", "name", "unique_code", "conversion_factor", "base_range",
+                    }
+            pending.extend(value.values())
+        elif isinstance(value, list):
+            pending.extend(value)

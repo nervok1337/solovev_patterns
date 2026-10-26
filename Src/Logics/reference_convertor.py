@@ -33,7 +33,9 @@ class reference_convertor(abstract_covertor):
         """Обходит структуру, делегируя каждое значение выбранному обработчику."""
         for ancestor in self.__ancestors:
             if source is ancestor:
-                return self.__create_reference(source)
+                raise argument_exception(
+                    "Обнаружена циклическая ссылка при преобразовании объекта"
+                )
 
         path = self.__ancestors.copy()
         path.append(source)
@@ -47,9 +49,7 @@ class reference_convertor(abstract_covertor):
                 items.append(convertor.convert(item, "value")["value"])
             return items
         else:
-            fields = {}
-            for field in common.get_fields(source):
-                fields[field] = getattr(source, field)
+            fields = self._get_fields(source)
             if not fields:
                 raise argument_exception(
                     f"Неподдерживаемый тип ссылочного значения: {type(source).__name__}"
@@ -63,12 +63,9 @@ class reference_convertor(abstract_covertor):
             result.update(convertor.convert(value, name))
         return result
 
-    @staticmethod
-    def __create_reference(value: object) -> dict[str, object]:
-        """Представляет цикл прежним способом до уточнения правила сериализации."""
-        unique_code = getattr(value, "unique_code", None)
-        if unique_code is None:
-            raise argument_exception(
-                "Нельзя преобразовать циклическую ссылку без unique_code"
-            )
-        return {"unique_code": unique_code}
+    def _get_fields(self, source: object) -> dict[str, object]:
+        """Возвращает публичные свойства для преобразования вложенных значений."""
+        fields: dict[str, object] = {}
+        for field in common.get_fields(source):
+            fields[field] = getattr(source, field)
+        return fields

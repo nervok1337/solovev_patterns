@@ -248,11 +248,11 @@ def test_equals_reference_convertor_convert_shared_reference():
     assert result == {"value": [expected, expected]}
 
 
-def test_equals_reference_convertor_convert_self_reference():
-    """<summary>Проверяет замену ссылки единицы на саму себя её уникальным кодом.</summary>"""
+def test_equals_range_convertor_convert_base_unit():
+    """<summary>Проверяет null для base_range без изменения базовой единицы.</summary>"""
     # Подготовка
     source = range_model.create("Килограмм", 1)
-    convertor = reference_convertor(convert_factory())
+    convertor = convert_factory().create(source)
 
     # Действие
     result = convertor.convert(source)
@@ -263,36 +263,27 @@ def test_equals_reference_convertor_convert_self_reference():
         "name": "Килограмм",
         "unique_code": source.unique_code,
         "conversion_factor": 1.0,
-        "base_range": {"unique_code": source.unique_code},
+        "base_range": None,
     }
     assert source.base_range is source
 
 
-def test_equals_reference_convertor_convert_indirect_cycle():
-    """<summary>Проверяет завершение обхода при циклической связи двух объектов.</summary>"""
+def test_argument_exception_reference_convertor_convert_indirect_cycle():
+    """<summary>Проверяет отклонение настоящего цикла вместо подмены объекта кодом.</summary>"""
     # Подготовка
     kilogram = range_model.create("Килограмм", 1)
     gram = range_model.create("Грамм", 0.001, kilogram)
     kilogram.base_range = gram
-    convertor = reference_convertor(convert_factory())
+    convertor = convert_factory().create(kilogram)
 
     # Действие
-    result = convertor.convert(kilogram)
+    with pytest.raises(argument_exception) as error:
+        convertor.convert(kilogram)
 
     # Проверки
-    assert result == {
-        "id": kilogram.id,
-        "name": "Килограмм",
-        "unique_code": kilogram.unique_code,
-        "conversion_factor": 1.0,
-        "base_range": {
-            "base_range": {"unique_code": kilogram.unique_code},
-            "conversion_factor": 0.001,
-            "id": gram.id,
-            "name": "Грамм",
-            "unique_code": gram.unique_code,
-        },
-    }
+    assert "циклическая ссылка" in str(error.value)
+    assert kilogram.base_range is gram
+    assert gram.base_range is kilogram
 
 
 def test_argument_exception_reference_convertor_convert_cycle_without_code():
@@ -308,7 +299,46 @@ def test_argument_exception_reference_convertor_convert_cycle_without_code():
         convertor.convert(source)
 
     # Проверки
-    assert "циклическую ссылку без unique_code" in str(error.value)
+    assert "циклическая ссылка" in str(error.value)
+
+
+def test_argument_exception_reference_convertor_convert_self_link_with_code():
+    """<summary>Проверяет, что самоссылка другой модели не заменяется null или ID.</summary>"""
+    # Подготовка
+    class self_linked_group(nomenclature_group_model):
+        """Содержит самоссылку, не связанную с правилом базовой единицы."""
+
+        @property
+        def related_group(self):
+            """Возвращает тот же объект группы."""
+            return self
+
+    source = self_linked_group("Продукты")
+    convertor = convert_factory().create(source)
+
+    # Действие
+    with pytest.raises(argument_exception) as error:
+        convertor.convert(source)
+
+    # Проверки
+    assert "циклическая ссылка" in str(error.value)
+    assert source.related_group is source
+
+
+def test_argument_exception_range_convertor_convert_non_base_self_link():
+    """<summary>Проверяет, что null не маскирует самоссылку с коэффициентом не 1.</summary>"""
+    # Подготовка
+    source = range_model.create("Килограмм", 1)
+    source.conversion_factor = 2
+    convertor = convert_factory().create(source)
+
+    # Действие
+    with pytest.raises(argument_exception) as error:
+        convertor.convert(source)
+
+    # Проверки
+    assert "циклическая ссылка" in str(error.value)
+    assert source.base_range is source
 
 
 def test_argument_exception_reference_convertor_convert_unsupported_value():
