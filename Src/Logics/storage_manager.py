@@ -47,10 +47,10 @@ class storage_manager(abstract_manager):
             return True
 
         piece = range_model.create("Штука", 1)
-        kilogram = range_model.create("Килограмм", 1)
-        gram = range_model.create("Грамм", 0.001, kilogram)
-        liter = range_model.create("Литр", 1)
-        milliliter = range_model.create("Миллилитр", 0.001, liter)
+        gram = range_model.create("Грамм", 1)
+        kilogram = range_model.create("Килограмм", 1000, gram)
+        milliliter = range_model.create("Миллилитр", 1)
+        liter = range_model.create("Литр", 1000, milliliter)
 
         products = nomenclature_group_model.create("Продукты")
         drinks = nomenclature_group_model.create("Напитки")
@@ -120,27 +120,27 @@ class storage_manager(abstract_manager):
     def add_range(self, value: range_model) -> None:
         """Добавляет единицу измерения, не дублируя её идентификатор."""
         validator.validate(value, range_model)
-        self.__ranges.setdefault(value.id, value)
+        self.__ranges.setdefault(value.unique_code, value)
 
     def add_group(self, value: nomenclature_group_model) -> None:
         """Добавляет группу, не дублируя её идентификатор."""
         validator.validate(value, nomenclature_group_model)
-        self.__groups.setdefault(value.id, value)
+        self.__groups.setdefault(value.unique_code, value)
 
     def add_warehouse(self, value: warehouse_model) -> None:
         """Добавляет склад, не дублируя его идентификатор."""
         validator.validate(value, warehouse_model)
-        self.__warehouses.setdefault(value.id, value)
+        self.__warehouses.setdefault(value.unique_code, value)
 
     def add_nomenclature(self, value: nomenclature_model) -> None:
         """Добавляет номенклатуру, не дублируя её идентификатор."""
         validator.validate(value, nomenclature_model)
-        self.__nomenclatures.setdefault(value.id, value)
+        self.__nomenclatures.setdefault(value.unique_code, value)
 
     def add_recipe(self, value: recipe_model) -> None:
         """Добавляет технологическую карту без дублирования."""
         validator.validate(value, recipe_model)
-        self.__recipes.setdefault(value.id, value)
+        self.__recipes.setdefault(value.unique_code, value)
 
     def find_entity(self, entity_type: str, entity_code: str):
         """Находит сущность в коллекции по типу и уникальному коду."""

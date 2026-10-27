@@ -53,6 +53,4 @@
 
 ## Абстрактный класс
 
-В файле [`Src/Core/entity_model.py`](Src/Core/entity_model.py) находится базовый класс `entity_model`,
-который задаёт общие свойства предметных сущностей: неизменяемый
-идентификатор и проверяемое наименование.
+В файле [`Src/Core/entity_model.py`](Src/Core/entity_model.py) находится базовый класс `entity_model`

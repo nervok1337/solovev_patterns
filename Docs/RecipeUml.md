@@ -3,7 +3,7 @@
 ```mermaid
 classDiagram
     class entity_model {
-        +id str
+        +unique_code str
         +name str
     }
 

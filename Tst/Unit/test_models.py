@@ -19,7 +19,7 @@ def test_group_created_with_valid_name():
 
     # Проверки
     assert group.name == name
-    assert group.id != ""
+    assert group.unique_code != ""
 
 
 def test_warehouse_created_with_valid_name():
@@ -32,7 +32,7 @@ def test_warehouse_created_with_valid_name():
 
     # Проверки
     assert warehouse.name == name
-    assert warehouse.id != ""
+    assert warehouse.unique_code != ""
 
 
 def test_base_range_created_without_explicit_base_range():
@@ -92,7 +92,8 @@ def test_nomenclature_created_with_group_and_range():
     name = "Молоко"
     full_name = "Молоко пастеризованное 3,2%"
     group = nomenclature_group_model("Молочные продукты")
-    unit = range_model("литр", 1)
+    milliliter = range_model("миллилитр", 1)
+    unit = range_model("литр", 1000, milliliter)
 
     # Действие
     nomenclature = nomenclature_model(name, full_name, group, unit)

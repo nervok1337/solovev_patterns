@@ -1,12 +1,28 @@
 import pytest
 
 from Src.Core.abstract_model import abstract_model
+from Src.Core.common import common
 from Src.Core.entity_model import entity_model
 from Src.Core.exception import arguments_exception
 
 
 class entity_for_test(abstract_model):
     """Тестовая реализация абстрактной модели."""
+
+
+def test_unique_code_is_only_public_entity_identifier():
+    """<summary>Проверяет единственный идентификатор при обходе свойств модели.</summary>"""
+    # Подготовка
+    entity = entity_model()
+
+    # Действие
+    fields = common.get_fields(entity)
+
+    # Проверки
+    assert entity.unique_code != ""
+    assert fields.count("unique_code") == 1
+    assert "id" not in fields
+    assert not hasattr(entity, "id")
 
 
 def test_unique_code_not_empty_after_abstract_model_created():

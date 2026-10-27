@@ -133,8 +133,8 @@ def test_instance_convert_factory_create_inherited_type():
 def test_instance_convert_factory_create_range_convertor(derived):
     """<summary>Проверяет выбор специального конвертера единиц измерения.</summary>"""
     # Подготовка
-    kilogram = range_model.create("Килограмм", 1)
-    source = range_model.create("Грамм", 0.001, kilogram) if derived else kilogram
+    gram = range_model.create("Грамм", 1)
+    source = range_model.create("Килограмм", 1000, gram) if derived else gram
     factory = convert_factory()
 
     # Действие
@@ -235,12 +235,10 @@ def test_equals_convert_factory_create_mixed_fields():
 
     # Проверки
     assert result == {
-        "id": source.id,
         "name": "Основная группа",
         "unique_code": source.unique_code,
         "created_at": "2026-10-24T12:30:00+08:00",
         "related_group": {
-            "id": group.id,
             "name": "Продукты",
             "unique_code": group.unique_code,
         },
@@ -252,7 +250,7 @@ def test_equals_convert_factory_create_nested_recipe():
     """<summary>Проверяет сохранение состава рецепта и связей его ингредиента.</summary>"""
     # Подготовка
     group = nomenclature_group_model.create("Продукты")
-    unit = range_model.create("Килограмм", 1)
+    unit = range_model.create("Грамм", 1)
     sugar = nomenclature_model.create("Сахар", "Сахар-песок", group, unit)
     ingredient = ingredient_model.create(sugar, 200, 190)
     base_recipe = recipe_model.create("Основа", [ingredient])
@@ -263,32 +261,29 @@ def test_equals_convert_factory_create_nested_recipe():
     result = factory.create(source).convert(source)
 
     # Проверки
-    assert result["id"] == source.id
+    assert result["unique_code"] == source.unique_code
     assert result["name"] == "Карамель"
     assert result["gross_weight"] == 200.0
     assert result["net_weight"] == 190.0
     assert len(result["ingredients"]) == 1
     base_data = result["ingredients"][0]
-    assert base_data["id"] == base_recipe.id
+    assert base_data["unique_code"] == base_recipe.unique_code
     assert base_data["name"] == "Основа"
     assert len(base_data["ingredients"]) == 1
     ingredient_data = base_data["ingredients"][0]
-    assert ingredient_data["id"] == ingredient.id
+    assert ingredient_data["unique_code"] == ingredient.unique_code
     assert ingredient_data["gross_weight"] == 200.0
     assert ingredient_data["net_weight"] == 190.0
     assert ingredient_data["nomenclature"] == {
-        "id": sugar.id,
         "name": "Сахар",
         "full_name": "Сахар-песок",
         "unique_code": sugar.unique_code,
         "group": {
-            "id": group.id,
             "name": "Продукты",
             "unique_code": group.unique_code,
         },
         "range": {
-            "id": unit.id,
-            "name": "Килограмм",
+            "name": "Грамм",
             "unique_code": unit.unique_code,
             "conversion_factor": 1.0,
             "base_range": None,
@@ -299,7 +294,7 @@ def test_equals_convert_factory_create_nested_recipe():
 def test_equals_convert_factory_create_base_unit():
     """<summary>Проверяет полную выгрузку базовой единицы с base_range null.</summary>"""
     # Подготовка
-    source = range_model.create("Килограмм", 1)
+    source = range_model.create("Грамм", 1)
     factory = convert_factory()
 
     # Действие
@@ -307,8 +302,7 @@ def test_equals_convert_factory_create_base_unit():
 
     # Проверки
     assert result == {
-        "id": source.id,
-        "name": "Килограмм",
+        "name": "Грамм",
         "unique_code": source.unique_code,
         "conversion_factor": 1.0,
         "base_range": None,
@@ -320,8 +314,8 @@ def test_equals_convert_factory_create_base_unit():
 def test_equals_convert_factory_range_restored_without_id_lookup(derived):
     """<summary>Проверяет восстановление единицы и её базы из полного JSON.</summary>"""
     # Подготовка
-    kilogram = range_model.create("Килограмм", 1)
-    source = range_model.create("Грамм", 0.001, kilogram) if derived else kilogram
+    gram = range_model.create("Грамм", 1)
+    source = range_model.create("Килограмм", 1000, gram) if derived else gram
     factory = convert_factory()
     data = json.loads(json.dumps(factory.create(source).convert(source)))
 
@@ -332,14 +326,14 @@ def test_equals_convert_factory_range_restored_without_id_lookup(derived):
     assert restored is not source
     assert restored.name == source.name
     assert restored.conversion_factor == source.conversion_factor
-    assert restored.base_range.name == "Килограмм"
+    assert restored.base_range.name == "Грамм"
     assert restored.base_range.base_range is restored.base_range
     assert factory.create(restored).convert(restored) == data
-    assert kilogram.base_range is kilogram
+    assert gram.base_range is gram
     if derived:
         assert restored.base_range is not restored
-        assert source.base_range is kilogram
-        assert data["base_range"]["name"] == "Килограмм"
+        assert source.base_range is gram
+        assert data["base_range"]["name"] == "Грамм"
         assert data["base_range"]["base_range"] is None
     else:
         assert restored.base_range is restored
@@ -349,7 +343,7 @@ def test_equals_convert_factory_range_restored_without_id_lookup(derived):
 def test_equals_convert_factory_create_independent_results():
     """<summary>Проверяет отсутствие переноса полей между вызовами фабрики.</summary>"""
     # Подготовка
-    unit = range_model.create("Килограмм", 1)
+    unit = range_model.create("Грамм", 1)
     group = nomenclature_group_model.create("Продукты")
     factory = convert_factory()
 
@@ -359,11 +353,10 @@ def test_equals_convert_factory_create_independent_results():
 
     # Проверки
     assert second_result == {
-        "id": group.id,
         "name": "Продукты",
         "unique_code": group.unique_code,
     }
-    assert first_result["name"] == "Килограмм"
+    assert first_result["name"] == "Грамм"
     assert first_result["base_range"] is None
 
 
@@ -422,10 +415,18 @@ def test_equals_convert_factory_storage_json_complete_collections():
     assert len(result["warehouses"]) == 3
     assert len(result["nomenclatures"]) == 4
     assert len(result["recipes"]) == 1
+    units = {unit["name"]: unit for unit in result["ranges"]}
+    assert units["Килограмм"]["conversion_factor"] == 1000
+    assert units["Килограмм"]["base_range"] == units["Грамм"]
+    assert units["Грамм"]["base_range"] is None
+    assert units["Литр"]["conversion_factor"] == 1000
+    assert units["Литр"]["base_range"] == units["Миллилитр"]
+    assert units["Миллилитр"]["base_range"] is None
     pending = [result]
     while pending:
         value = pending.pop()
         if isinstance(value, dict):
+            assert "id" not in value
             assert set(value) != {"unique_code"}
             if "base_range" in value:
                 base = value["base_range"]
@@ -433,7 +434,7 @@ def test_equals_convert_factory_storage_json_complete_collections():
                     assert value["conversion_factor"] == 1
                 else:
                     assert set(base) == {
-                        "id", "name", "unique_code", "conversion_factor", "base_range",
+                        "name", "unique_code", "conversion_factor", "base_range",
                     }
             pending.extend(value.values())
         elif isinstance(value, list):

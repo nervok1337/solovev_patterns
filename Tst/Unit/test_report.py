@@ -76,19 +76,19 @@ def test_report_data_aligns_rows_with_different_fields():
 
     # Проверки
     assert data.keys == [
-        "gross_weight", "id", "name", "net_weight", "nomenclature", "unique_code",
+        "gross_weight", "name", "net_weight", "nomenclature", "unique_code",
     ]
     assert data.headers == data.keys
     assert len(data.rows) == 2
     assert isinstance(data.rows[0], report_row_dto)
     assert isinstance(data.rows[1], report_row_dto)
     assert data.rows[0].values == [
-        200.0, sugar.id, "Сахар", 190.0, "Сахар", sugar.unique_code,
+        200.0, "Сахар", 190.0, "Сахар", sugar.unique_code,
     ]
     assert data.rows[1].values == [
-        250.0, base_recipe.id, "Основа", 240.0, "", base_recipe.unique_code,
+        250.0, "Основа", 240.0, "", base_recipe.unique_code,
     ]
-    assert data.numeric_columns == frozenset([0, 3])
+    assert data.numeric_columns == frozenset([0, 2])
 
 
 def test_report_data_builds_row_dto_for_single_model():
@@ -105,7 +105,7 @@ def test_report_data_builds_row_dto_for_single_model():
     assert len(data.rows) == 1
     assert isinstance(data.rows[0], report_row_dto)
     assert data.rows[0].values == [
-        200.0, sugar.id, "Сахар", 190.0, "Сахар", sugar.unique_code,
+        200.0, "Сахар", 190.0, "Сахар", sugar.unique_code,
     ]
 
 
@@ -133,13 +133,13 @@ def test_text_report_builds_recipe_table():
     # Проверки
     assert isinstance(result, report_result_dto)
     assert result.text.splitlines() == [
-        "gross_weight | id | name | net_weight | nomenclature | unique_code",
+        "gross_weight | name | net_weight | nomenclature | unique_code",
         (
-            f"200.0 | {sugar.id} | Сахар | 190.0 | Сахар | "
+            f"200.0 | Сахар | 190.0 | Сахар | "
             f"{sugar.unique_code}"
         ),
         (
-            f"250.0 | {milk.id} | Молоко | 240.0 | Молоко | "
+            f"250.0 | Молоко | 240.0 | Молоко | "
             f"{milk.unique_code}"
         ),
     ]
@@ -163,14 +163,13 @@ def test_csv_report_builds_recipe_table():
     assert rows == [
         [
             "gross_weight",
-            "id",
             "name",
             "net_weight",
             "nomenclature",
             "unique_code",
         ],
-        ["200.0", sugar.id, "Сахар", "190.0", "Сахар", sugar.unique_code],
-        ["250.0", milk.id, "Молоко", "240.0", "Молоко", milk.unique_code],
+        ["200.0", "Сахар", "190.0", "Сахар", sugar.unique_code],
+        ["250.0", "Молоко", "240.0", "Молоко", milk.unique_code],
     ]
     assert result.text == ""
     assert result.binary != []
@@ -191,16 +190,16 @@ def test_markdown_report_builds_recipe_table():
     assert isinstance(result, report_result_dto)
     assert content.splitlines() == [
         (
-            "| gross_weight | id | name | net_weight | nomenclature | "
+            "| gross_weight | name | net_weight | nomenclature | "
             "unique_code |"
         ),
-        "| ---: | --- | --- | ---: | --- | --- |",
+        "| ---: | --- | ---: | --- | --- |",
         (
-            f"| 200.0 | {sugar.id} | Сахар | 190.0 | Сахар | "
+            f"| 200.0 | Сахар | 190.0 | Сахар | "
             f"{sugar.unique_code} |"
         ),
         (
-            f"| 250.0 | {milk.id} | Молоко | 240.0 | Молоко | "
+            f"| 250.0 | Молоко | 240.0 | Молоко | "
             f"{milk.unique_code} |"
         ),
     ]
@@ -234,7 +233,6 @@ def test_xml_report_builds_recipe_document():
     ] == [
         {
             "gross_weight": "200.0",
-            "id": sugar.id,
             "name": "Сахар",
             "net_weight": "190.0",
             "nomenclature": "Сахар",
@@ -242,7 +240,6 @@ def test_xml_report_builds_recipe_document():
         },
         {
             "gross_weight": "250.0",
-            "id": milk.id,
             "name": "Молоко",
             "net_weight": "240.0",
             "nomenclature": "Молоко",
@@ -266,12 +263,12 @@ def test_html_report_builds_recipe_table():
     assert isinstance(result, report_result_dto)
     assert result.text == (
         "<table><thead><tr>"
-        "<th>gross_weight</th><th>id</th><th>name</th>"
+        "<th>gross_weight</th><th>name</th>"
         "<th>net_weight</th><th>nomenclature</th><th>unique_code</th>"
         "</tr></thead><tbody>"
-        f"<tr><td>200.0</td><td>{sugar.id}</td><td>Сахар</td>"
+        f"<tr><td>200.0</td><td>Сахар</td>"
         f"<td>190.0</td><td>Сахар</td><td>{sugar.unique_code}</td></tr>"
-        f"<tr><td>250.0</td><td>{milk.id}</td><td>Молоко</td>"
+        f"<tr><td>250.0</td><td>Молоко</td>"
         f"<td>240.0</td><td>Молоко</td><td>{milk.unique_code}</td></tr>"
         "</tbody></table>"
     )
