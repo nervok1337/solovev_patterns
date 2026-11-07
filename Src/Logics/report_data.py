@@ -1,16 +1,8 @@
-from collections.abc import Mapping, Sequence, Set
+from collections.abc import Mapping
 
 from Src.Core.common import common
 from Src.Dtos.report_data_dto import report_data_dto
 from Src.Dtos.report_row_dto import report_row_dto
-
-
-def is_collection(value) -> bool:
-    """Проверяет, является ли значение коллекцией, но не строкой."""
-    return isinstance(value, (Mapping, Sequence, Set)) and not isinstance(
-        value,
-        (str, bytes, bytearray),
-    )
 
 
 def get_collection_items(source) -> list | None:
@@ -19,7 +11,7 @@ def get_collection_items(source) -> list | None:
         value = getattr(source, field)
         if isinstance(value, Mapping):
             return list(value.values())
-        if is_collection(value):
+        if common.is_collection(value):
             return list(value)
 
     return None
@@ -27,7 +19,7 @@ def get_collection_items(source) -> list | None:
 
 def get_display_value(value):
     """Преобразует вложенную модель в понятное скалярное значение."""
-    if value is None or isinstance(value, (str, int, float, bool)):
+    if common.is_simple_value(value):
         return value
 
     fields = common.get_fields(value, is_common=True)
