@@ -1,27 +1,25 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from typing import Any
 
-from Src.Core.entity_model import entity_model
 
-
-# Обработчик вложений получает данные и ожидаемый тип модели.
-restore_model = Callable[[dict, type[entity_model]], entity_model]
+# Ожидаемый тип может быть классом, list[Dto], Union и т.д.
+restore_model = Callable[[object, Any], object]
 
 
 class abstract_model_deserializer(ABC):
-    """Контракт восстановления модели из данных, независимый от JSON и файлов."""
-
-    fields: set[str]
+    """Контракт восстановления значения, не требующий наследования модели."""
 
     @abstractmethod
-    def restore(self, source: dict, restore: restore_model) -> entity_model:
-        """Создать модель, поручая восстановление вложений переданной функции."""
-        pass
+    def matches(self, source: object) -> bool:
+        """Проверить форму данных без создания модели (для выбора Union)."""
+
+    @abstractmethod
+    def restore(self, source: object, restore: restore_model) -> object:
+        """Восстановить значение, передавая вложения общей функции."""
 
 
 class abstract_deserialize_factory(ABC):
-    """Выбор обработчика по ожидаемому типу модели."""
-
     @abstractmethod
-    def create(self, model_type: type[entity_model]) -> abstract_model_deserializer:
-        pass
+    def create(self, model_type: Any) -> abstract_model_deserializer:
+        """Выбрать обработчик по ожидаемому типу, включая аннотации коллекций."""

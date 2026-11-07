@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from Src.Core.entity_model import entity_model
+from typing import Any
 from Src.Core.exception import arguments_exception
 from Src.Dtos.storage_data_dto import storage_data_dto
 from Src.Logics.deserializer import deserializer
@@ -26,11 +26,11 @@ class json_deserializer:
             result[key] = value
         return result
 
-    def __parse(self, text: str) -> dict:
+    def __parse(self, text: str) -> object:
         return json.loads(text, parse_constant=self.__invalid_constant,
                           object_pairs_hook=self.__object)
 
-    def loads(self, text: str, model_type: type[entity_model]) -> entity_model:
+    def loads(self, text: str, model_type: Any) -> object:
         """Прочитать одну модель из JSON-строки с явно заданным типом."""
         return self.__loader.deserialize(self.__parse(text), model_type)
 

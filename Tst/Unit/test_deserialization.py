@@ -110,7 +110,7 @@ def test_conflicting_repeated_object_is_rejected(storage, loader):
 def test_recipe_cannot_override_computed_weight(storage, loader):
     source = serialize(storage.recipes[0])
     source["net_weight"] = 100
-    with pytest.raises(arguments_exception, match="Вес рецепта"):
+    with pytest.raises(arguments_exception, match="Вычисляемое свойство"):
         loader.loads(json.dumps(source), recipe_model)
 
 
@@ -118,3 +118,94 @@ def test_recipe_cannot_override_computed_weight(storage, loader):
 def test_ambiguous_or_nonstandard_json_is_rejected(loader, text):
     with pytest.raises(arguments_exception):
         loader.loads_storage(text)
+
+
+def test_existing_report_dto_without_entity_fields(loader):
+    from Src.Dtos.report_data_dto import report_data_dto
+    from Src.Dtos.report_row_dto import report_row_dto
+
+    original = report_data_dto(
+        "report", None, "Отчёт", ["quantity"], ["Количество"],
+        [report_row_dto([12, None, {"comment": "пример"}])], frozenset({0}),
+    )
+    source = serialize(original)
+    restored = loader.loads(json.dumps(source), report_data_dto)
+    assert type(restored) is report_data_dto
+    assert type(restored.rows[0]) is report_row_dto
+    assert restored.numeric_columns == frozenset({0})
+    assert serialize(restored) == source
+    assert not hasattr(restored, "unique_code")
+
+
+def test_new_nested_dto_requires_no_factory_registration(loader):
+    from dataclasses import dataclass
+
+    @dataclass
+    class measurement:
+        amplitude: float
+        valid: bool
+
+    @dataclass
+    class observation:
+        samples: list[measurement]
+        station: str = "unknown"
+
+    restored = loader.loads(
+        '{"samples": [{"amplitude": 2.5, "valid": true}]}', observation
+    )
+    assert isinstance(restored.samples[0], measurement)
+    assert restored.samples[0].amplitude == 2.5
+    assert restored.station == "unknown"
+
+
+def test_inherited_properties_are_discovered_without_executing_getters(loader):
+    class parent:
+        def __init__(self, count: int):
+            self._count = count
+
+        @property
+        def count(self) -> int:
+            return self._count
+
+    class child(parent):
+        @property
+        def doubled(self) -> int:
+            return self.count * 2
+
+    restored = loader.loads('{"count": 3, "doubled": 6}', child)
+    assert restored.count == 3
+    assert restored.doubled == 6
+    with pytest.raises(arguments_exception, match="Вычисляемое свойство"):
+        loader.loads('{"count": 3, "doubled": 7}', child)
+
+
+def test_ambiguous_union_is_rejected(loader):
+    from dataclasses import dataclass
+
+    @dataclass
+    class first:
+        value: int
+
+    @dataclass
+    class second:
+        value: int
+
+    with pytest.raises(arguments_exception, match="однозначно"):
+        loader.loads('{"value": 1}', first | second)
+
+
+def test_model_constructor_validation_is_preserved(storage, loader):
+    source = serialize(storage.recipes[0].ingredients[1])
+    source["net_weight"] = source["gross_weight"] + 1
+    with pytest.raises(arguments_exception, match="нетто"):
+        loader.loads(json.dumps(source), ingredient_model)
+
+
+def test_typed_dictionary_and_optional_dto(loader):
+    from Src.Dtos.report_row_dto import report_row_dto
+
+    result = loader.loads('{"a": {"values": [1]}, "b": null}',
+                          dict[str, report_row_dto | None])
+    assert isinstance(result["a"], report_row_dto)
+    assert result["a"].values == [1]
+    assert result["b"] is None
