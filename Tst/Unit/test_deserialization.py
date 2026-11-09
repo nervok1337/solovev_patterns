@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from Src.Core.common import common
 from Src.Core.exception import arguments_exception
 from Src.Logics.convert_factory import convert_factory
 from Src.Logics.deserialize_factory import deserialize_factory
@@ -17,6 +18,7 @@ from Src.Models.settings_model import settings_model
 
 
 def serialize(model):
+    """Выгружает все публичные свойства объекта существующей фабрикой конвертеров."""
     factory = convert_factory()
     return factory.create(model).convert(model)
 
@@ -39,18 +41,54 @@ def loader():
     return json_deserializer(deserializer(deserialize_factory()))
 
 
-def test_storage_file_restores_values_types_and_shared_references(storage, loader, tmp_path):
+def test_full_storage_export_import_compares_all_models(storage, loader, tmp_path):
+    """Выгружает всё хранилище в файл, загружает и сравнивает все модели и связи."""
+    # Подготовка: storage содержит все первичные модели из storage_manager.convert.
     expected = serialize(storage)
     path = tmp_path / "storage.json"
-    path.write_text(json.dumps(expected, ensure_ascii=False), encoding="utf-8")
+    # Действие: весь снимок проходит через настоящий JSON-файл.
+    path.write_text(json.dumps(expected, ensure_ascii=False, allow_nan=False), encoding="utf-8")
     restored = loader.load_storage(path)
 
-    # Equality моделей сравнивает только код: здесь проверяются все поля.
+    # Проверка: сравниваем объекты напрямую, независимо от повторной сериализации.
+    restored_by_original = {}
+    original_by_restored = {}
+
+    def compare(original, loaded):
+        """Сравнивает каждое свойство и сохраняемую структуру ссылок, учитывая циклы."""
+        assert type(loaded) is type(original)
+        if common.is_simple_value(original):
+            assert loaded == original
+            return
+        if isinstance(original, list):
+            assert len(loaded) == len(original)
+            for original_item, loaded_item in zip(original, loaded):
+                compare(original_item, loaded_item)
+            return
+
+        assert loaded is not original
+        if id(original) in restored_by_original:
+            assert restored_by_original[id(original)] is loaded
+            return
+        # Разные исходные объекты не должны случайно объединиться при загрузке.
+        assert id(loaded) not in original_by_restored
+        restored_by_original[id(original)] = loaded
+        original_by_restored[id(loaded)] = original
+        fields = common.get_fields(original)
+        assert fields
+        assert common.get_fields(loaded) == fields
+        for field in fields:
+            compare(getattr(original, field), getattr(loaded, field))
+
+    # Корневой DTO заменяет менеджер; все его коллекции содержат исходные типы моделей.
+    fields = common.get_fields(storage)
+    assert common.get_fields(restored) == fields
+    assert storage.is_loaded is True
+    for field in fields:
+        compare(getattr(storage, field), getattr(restored, field))
+
+    # Дополнительно проверяем полное совпадение повторной выгрузки с исходной.
     assert serialize(restored) == expected
-    for section in ("ranges", "groups", "warehouses", "nomenclatures", "recipes"):
-        for original, loaded in zip(getattr(storage, section), getattr(restored, section)):
-            assert type(loaded) is type(original)
-            assert loaded is not original
     ranges = {item.unique_code: item for item in restored.ranges}
     groups = {item.unique_code: item for item in restored.groups}
     nomenclatures = {item.unique_code: item for item in restored.nomenclatures}
@@ -209,3 +247,21 @@ def test_typed_dictionary_and_optional_dto(loader):
     assert isinstance(result["a"], report_row_dto)
     assert result["a"].values == [1]
     assert result["b"] is None
+
+
+@pytest.mark.parametrize("error_type", [TypeError, ValueError, RuntimeError])
+def test_constructor_error_preserves_original_cause(loader, error_type):
+    """Проверяет контекст ошибки создания модели и сохранение исходной причины."""
+    original_error = error_type("Ошибка конструктора")
+
+    class failing_model:
+        """Модель с конструктором, завершающимся ошибкой."""
+
+        def __init__(self, value: int):
+            """Имитирует ошибку при создании модели из корректно разобранных данных."""
+            raise original_error
+
+    with pytest.raises(arguments_exception, match="Не удалось создать failing_model") as caught:
+        loader.loads('{"value": 1}', failing_model)
+
+    assert caught.value.__cause__ is original_error

@@ -17,9 +17,3 @@ class abstract_model_deserializer(ABC):
     @abstractmethod
     def restore(self, source: object, restore: restore_model) -> object:
         """Восстановить значение, передавая вложения общей функции."""
-
-
-class abstract_deserialize_factory(ABC):
-    @abstractmethod
-    def create(self, model_type: Any) -> abstract_model_deserializer:
-        """Выбрать обработчик по ожидаемому типу, включая аннотации коллекций."""
