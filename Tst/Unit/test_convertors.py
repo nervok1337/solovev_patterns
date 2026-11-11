@@ -67,7 +67,6 @@ def test_equals_reference_convertor_convert_inherited_properties():
 
     # Проверки
     assert result == {
-        "id": source.id,
         "name": "Продукты",
         "unique_code": source.unique_code,
     }
@@ -149,7 +148,6 @@ def test_equals_reference_convertor_convert_nested_objects():
     assert result == {
         "value": {
             "value": {
-                "id": group.id,
                 "name": "Продукты",
                 "unique_code": group.unique_code,
             },
@@ -184,7 +182,7 @@ def test_equals_reference_convertor_convert_mixed_collection():
     # Проверки
     assert result == {
         "value": [
-            {"id": group.id, "name": "Продукты", "unique_code": group.unique_code},
+            {"name": "Продукты", "unique_code": group.unique_code},
             "2026-10-24T12:30:00",
             0,
             False,
@@ -210,7 +208,6 @@ def test_equals_reference_convertor_convert_mapping():
     assert result == {
         "value": {
             "group": {
-                "id": group.id,
                 "name": "Продукты",
                 "unique_code": group.unique_code,
             },
@@ -238,7 +235,7 @@ def test_equals_reference_convertor_convert_shared_reference():
     # Подготовка
     group = nomenclature_group_model.create("Продукты")
     source = value_model([group, group])
-    expected = {"id": group.id, "name": "Продукты", "unique_code": group.unique_code}
+    expected = {"name": "Продукты", "unique_code": group.unique_code}
     convertor = reference_convertor(convert_factory())
 
     # Действие
@@ -251,7 +248,7 @@ def test_equals_reference_convertor_convert_shared_reference():
 def test_equals_range_convertor_convert_base_unit():
     """<summary>Проверяет null для base_range без изменения базовой единицы.</summary>"""
     # Подготовка
-    source = range_model.create("Килограмм", 1)
+    source = range_model.create("Грамм", 1)
     convertor = convert_factory().create(source)
 
     # Действие
@@ -259,8 +256,7 @@ def test_equals_range_convertor_convert_base_unit():
 
     # Проверки
     assert result == {
-        "id": source.id,
-        "name": "Килограмм",
+        "name": "Грамм",
         "unique_code": source.unique_code,
         "conversion_factor": 1.0,
         "base_range": None,
@@ -271,14 +267,14 @@ def test_equals_range_convertor_convert_base_unit():
 def test_argument_exception_reference_convertor_convert_indirect_cycle():
     """<summary>Проверяет отклонение настоящего цикла вместо подмены объекта кодом.</summary>"""
     # Подготовка
-    kilogram = range_model.create("Килограмм", 1)
-    gram = range_model.create("Грамм", 0.001, kilogram)
-    kilogram.base_range = gram
-    convertor = convert_factory().create(kilogram)
+    gram = range_model.create("Грамм", 1)
+    kilogram = range_model.create("Килограмм", 1000, gram)
+    gram.base_range = kilogram
+    convertor = convert_factory().create(gram)
 
     # Действие
     with pytest.raises(argument_exception) as error:
-        convertor.convert(kilogram)
+        convertor.convert(gram)
 
     # Проверки
     assert "циклическая ссылка" in str(error.value)
@@ -328,7 +324,7 @@ def test_argument_exception_reference_convertor_convert_self_link_with_code():
 def test_argument_exception_range_convertor_convert_non_base_self_link():
     """<summary>Проверяет, что null не маскирует самоссылку с коэффициентом не 1.</summary>"""
     # Подготовка
-    source = range_model.create("Килограмм", 1)
+    source = range_model.create("Грамм", 1)
     source.conversion_factor = 2
     convertor = convert_factory().create(source)
 

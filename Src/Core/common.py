@@ -20,18 +20,22 @@ class common:
 
     @staticmethod
     def get_fields(source, is_common: bool = False) -> list[str]:
-        """Возвращает имена публичных свойств объекта через рефлексию."""
+        """Возвращает публичные свойства; для класса не вызывает геттеры.
+
+        Фильтрация is_common по значениям применяется только к экземплярам.
+        """
         if source is None:
             raise argument_exception("Некорректно переданы аргументы!")
 
+        source_type = source if isinstance(source, type) else type(source)
         fields = []
         for name in filter(lambda item: not item.startswith("_"), dir(source)):
-            attribute = getattr(source.__class__, name, None)
+            attribute = getattr(source_type, name, None)
             if not isinstance(attribute, property):
                 continue
 
-            value = getattr(source, name)
-            if is_common and common.is_collection(value):
+            if (not isinstance(source, type) and is_common
+                    and common.is_collection(getattr(source, name))):
                 continue
 
             fields.append(name)

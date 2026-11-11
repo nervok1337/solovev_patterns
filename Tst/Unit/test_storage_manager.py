@@ -166,19 +166,32 @@ def test_convert_storage_manager_creates_expected_initial_data():
 
 def test_convert_storage_manager_preserves_model_relationships():
     """Проверяет связи первичной номенклатуры с группами и единицами."""
+    # Подготовка
     settings = settings_model()
     settings.is_first_start = True
     manager = storage_manager()
 
+    # Действие
     manager.convert(settings)
     sugar = next(item for item in manager.nomenclatures if item.name == "Сахар")
+    milk = next(item for item in manager.nomenclatures if item.name == "Молоко")
     gram = next(item for item in manager.ranges if item.name == "Грамм")
     kilogram = next(item for item in manager.ranges if item.name == "Килограмм")
+    milliliter = next(item for item in manager.ranges if item.name == "Миллилитр")
+    liter = next(item for item in manager.ranges if item.name == "Литр")
 
+    # Проверки
     assert sugar.group.name == "Продукты"
     assert sugar.range is kilogram
-    assert gram.base_range is kilogram
-    assert gram.conversion_factor == 0.001
+    assert kilogram.base_range is gram
+    assert kilogram.conversion_factor == 1000
+    assert gram.base_range is gram
+    assert gram.conversion_factor == 1
+    assert milk.range is liter
+    assert liter.base_range is milliliter
+    assert liter.conversion_factor == 1000
+    assert milliliter.base_range is milliliter
+    assert milliliter.conversion_factor == 1
 
 
 def test_convert_storage_manager_does_not_duplicate_initial_data():

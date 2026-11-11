@@ -68,13 +68,13 @@ def test_text_report_created_by_factory_builds_report(settings):
     # Проверка
     assert isinstance(result, report_result_dto)
     assert result.text.splitlines() == [
-        "gross_weight | id | name | net_weight | nomenclature | unique_code",
+        "gross_weight | name | net_weight | nomenclature | unique_code",
         (
-            f"200.0 | {sugar.id} | Сахар | 190.0 | Сахар | "
+            f"200.0 | Сахар | 190.0 | Сахар | "
             f"{sugar.unique_code}"
         ),
         (
-            f"250.0 | {milk.id} | Молоко | 240.0 | Молоко | "
+            f"250.0 | Молоко | 240.0 | Молоко | "
             f"{milk.unique_code}"
         ),
     ]

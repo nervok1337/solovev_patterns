@@ -16,11 +16,6 @@ class entity_model(ABC):
         self.__unique_code = uuid.uuid4().hex
 
     @property
-    def id(self) -> str:
-        """Возвращает идентификатор сущности."""
-        return self.__unique_code
-
-    @property
     def name(self) -> str:
         """Возвращает наименование сущности."""
         return self.__name
@@ -41,12 +36,12 @@ class entity_model(ABC):
 
     @property
     def unique_code(self) -> str:
-        """Возвращает уникальный код для обратной совместимости."""
+        """Возвращает единственный идентификатор сущности."""
         return self.__unique_code
 
     @unique_code.setter
     def unique_code(self, value: str) -> None:
-        """Изменяет уникальный код через прежний интерфейс."""
+        """Устанавливает уникальный код сущности."""
         if not isinstance(value, str) or value.strip() == "":
             raise arguments_exception(
                 "value",
