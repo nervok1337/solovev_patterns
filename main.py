@@ -1,5 +1,6 @@
 import connexion
-from flask import request
+from connexion.options import SwaggerUIOptions
+from flask import jsonify, make_response, request, send_from_directory
 
 from Src.Dtos.report_type_dto import report_type_enum
 from Src.Logics.report_factory import report_factory
@@ -7,6 +8,17 @@ from Src.Logics.settings_manager import settings_manager
 from Src.Logics.storage_manager import storage_manager
 
 api = connexion.FlaskApp(__name__)
+
+
+@api.route("/api-spec.yaml", methods=["GET"])
+def get_openapi_spec():
+    """Отдаёт Swagger исходную спецификацию с сохранением адресов серверов."""
+    return send_from_directory(api.app.root_path, "openapi.yaml", mimetype="application/yaml")
+
+
+def get_entities():
+    """Возвращает типы сущностей, доступные для получения отчётов."""
+    return jsonify(storage.entity_types()), 200
 
 
 @api.route("/api/get_report", methods=["GET"])
@@ -32,17 +44,16 @@ def get_report():
     return report.create_response(result)
 
 
-@api.route("/api/get_default_report", methods=["GET"])
-def get_default_report():
+def get_default_report(type: str = "", code: str = ""):
     """Формирует отчёт сущности в формате из настроек приложения."""
-    requested_type = request.args.get("type", "").strip().lower()
-    requested_code = request.args.get("code", "").strip()
+    requested_type = (type or request.args.get("type", "")).strip().lower()
+    requested_code = (code or request.args.get("code", "")).strip()
     if not requested_type or not requested_code:
-        return {"error": "Необходимо указать type и code"}, 400
+        return make_response(jsonify({"error": "Необходимо указать type и code"}), 400)
 
     entity, error, status = storage.find_entity(requested_type, requested_code)
     if error is not None:
-        return {"error": error}, status
+        return make_response(jsonify({"error": error}), status)
 
     report = factory.create_default()
     result = report.build(entity)
@@ -57,6 +68,13 @@ storage = storage_manager()
 storage.convert(settings.settings)
 
 factory = report_factory(settings.settings)
+
+api.add_api(
+    "openapi.yaml",
+    swagger_ui_options=SwaggerUIOptions(
+        swagger_ui_template_arguments={"openapi_spec_url": "/api-spec.yaml"},
+    ),
+)
 
 if __name__ == "__main__":
     api.run(host="0.0.0.0", port=8000)

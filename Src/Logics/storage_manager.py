@@ -1,4 +1,5 @@
 from Src.Core.abstract_manager import abstract_manager
+from Src.Core.common import common
 from Src.Core.validator import validator
 from Src.Models.ingredient_model import ingredient_model
 from Src.Models.nomenclature_group_model import nomenclature_group_model
@@ -142,23 +143,29 @@ class storage_manager(abstract_manager):
         validator.validate(value, recipe_model)
         self.__recipes.setdefault(value.unique_code, value)
 
+    def entity_types(self) -> list[str]:
+        """Находит публичные коллекции хранилища через общую рефлексию."""
+        return [
+            field for field in common.get_fields(self)
+            if common.is_collection(getattr(self, field))
+        ]
+
     def find_entity(self, entity_type: str, entity_code: str):
         """Находит сущность в коллекции по типу и уникальному коду."""
         type_aliases = {
             "nomenclature": "nomenclatures",
-            "nomenclatures": "nomenclatures",
             "номенклатура": "nomenclatures",
             "range": "ranges",
-            "ranges": "ranges",
             "unit": "ranges",
             "unit_of_measurement": "ranges",
             "единица измерения": "ranges",
             "recipe": "recipes",
-            "recipes": "recipes",
             "рецепт": "recipes",
+            "group": "groups",
+            "warehouse": "warehouses",
         }
-        collection_name = type_aliases.get(entity_type)
-        if collection_name is None:
+        collection_name = type_aliases.get(entity_type, entity_type)
+        if collection_name not in self.entity_types():
             return None, f"Неподдерживаемый тип: {entity_type}", 400
 
         entity = next(
