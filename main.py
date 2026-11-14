@@ -6,6 +6,13 @@ from Src.Dtos.report_type_dto import report_type_enum
 from Src.Logics.report_factory import report_factory
 from Src.Logics.settings_manager import settings_manager
 from Src.Logics.storage_manager import storage_manager
+from Src.Logics.convert_factory import convert_factory
+from Src.Logics.deserialize_factory import deserialize_factory
+from Src.Logics.deserializer import deserializer
+from Src.Logics.json_deserializer import json_deserializer
+from Src.Logics.entity_mapper import entity_mapper
+from Src.Logics.entity_service import entity_service
+from Src.Core.validator import argument_exception, operation_exception
 
 api = connexion.FlaskApp(__name__)
 
@@ -18,10 +25,9 @@ def get_openapi_spec():
 
 def get_entities():
     """Возвращает типы сущностей, доступные для получения отчётов."""
-    return jsonify(storage.entity_types()), 200
+    return jsonify(list(crud.types())), 200
 
 
-@api.route("/api/get_report", methods=["GET"])
 def get_report():
     """Формирует отчёт сущности в явно указанном формате."""
     requested_format = request.args.get("format", "").strip().upper()
@@ -60,17 +66,74 @@ def get_default_report(type: str = "", code: str = ""):
     return report.create_response(result)
 
 
-# Инициализация приложения
-settings = settings_manager()
-settings.load("settings.json")
+def get_report_formats():
+    """Возвращает форматы, зарегистрированные в существующей фабрике."""
+    return jsonify(factory.available_formats()), 200
 
+
+def list_entities(entity_type):
+    """Передаёт получение коллекции сценарию CRUD."""
+    return jsonify([mapper.encode(item) for item in crud.list(entity_type)]), 200
+
+
+def get_entity(entity_type, code):
+    """Передаёт поиск объекта сценарию CRUD."""
+    return jsonify(mapper.encode(crud.get(entity_type, code))), 200
+
+
+def create_entity(entity_type, body):
+    """Преобразует входные данные и вызывает создание сущности."""
+    entity = crud.create(entity_type, lambda model_type, source: mapper.decode(body, model_type, source))
+    return jsonify(mapper.encode(entity)), 201
+
+
+def replace_entity(entity_type, code, body):
+    """Передаёт полную замену данных сценарию CRUD."""
+    entity = crud.update(entity_type, code, lambda original, source: mapper.updated(original, body, source))
+    return jsonify(mapper.encode(entity)), 200
+
+
+def delete_entity(entity_type, code):
+    """Вызывает удаление сущности с проверкой связей."""
+    crud.delete(entity_type, code)
+    return "", 204
+
+
+def invalid_data(error):
+    """Преобразует ошибки аргументов в HTTP-ответ на внешней границе."""
+    return jsonify(error=str(error)), 400
+
+
+def missing_entity(error):
+    """Преобразует отсутствие сущности в HTTP-ответ."""
+    return jsonify(error=str(error)), 404
+
+
+def conflicting_entity(error):
+    """Преобразует конфликт кода или ссылок в HTTP-ответ."""
+    return jsonify(error=str(error)), 409
+
+
+# Сборка зависимостей на внешней границе приложения.
+restoration = deserializer(deserialize_factory())
+json_loader = json_deserializer(restoration)
+settings = settings_manager(restoration.deserialize, json_loader.load)
+settings.load("settings.json")
 storage = storage_manager()
 storage.convert(settings.settings)
-
 factory = report_factory(settings.settings)
+crud = entity_service(storage)
+mapper = entity_mapper(deserialize_factory(), convert_factory())
+
+for error_type in (ValueError, argument_exception):
+    api.app.register_error_handler(error_type, invalid_data)
+api.app.register_error_handler(KeyError, missing_entity)
+api.app.register_error_handler(operation_exception, conflicting_entity)
 
 api.add_api(
     "openapi.yaml",
+    strict_validation=True,
+    validate_responses=True,
     swagger_ui_options=SwaggerUIOptions(
         swagger_ui_template_arguments={"openapi_spec_url": "/api-spec.yaml"},
     ),

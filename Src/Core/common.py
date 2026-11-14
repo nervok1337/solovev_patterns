@@ -1,4 +1,6 @@
 from collections.abc import Mapping, Sequence, Set
+from inspect import signature
+from typing import get_type_hints
 
 from Src.Core.validator import argument_exception
 
@@ -41,3 +43,32 @@ class common:
             fields.append(name)
 
         return fields
+
+    @staticmethod
+    def get_annotations(model_type: type) -> dict:
+        """Получает типы параметров конструктора и публичных свойств модели."""
+        hints = get_type_hints(model_type.__init__)
+        result = {name: hints[name] for name in signature(model_type).parameters if name in hints}
+        for name in common.get_fields(model_type):
+            hint = get_type_hints(getattr(model_type, name).fget).get("return")
+            if hint is not None and name not in result:
+                result[name] = hint
+        return result
+
+    @staticmethod
+    def walk(source: object):
+        """Обходит публичный граф объектов без повторного посещения узлов."""
+        pending = [source]
+        visited = {}
+        while pending:
+            value = pending.pop()
+            if id(value) in visited:
+                continue
+            visited[id(value)] = value
+            yield value
+            if isinstance(value, Mapping):
+                pending.extend(value.values())
+            elif common.is_collection(value):
+                pending.extend(value)
+            elif value is not None:
+                pending.extend(getattr(value, name) for name in common.get_fields(value))

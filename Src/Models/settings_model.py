@@ -16,6 +16,11 @@ class settings_model(abstract_model):
     __is_first_start: bool = True
     __response_format: report_type_enum = report_type_enum.TXT
 
+    def validate(self) -> None:
+        """Проверяет обязательные данные загруженной конфигурации."""
+        validator.validate(self.organization, organization_model)
+        validator.validate(self.account_name, str, 255)
+
     @property
     def organization(self) -> organization_model:
         return self.__organization
