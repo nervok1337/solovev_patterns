@@ -6,6 +6,12 @@ from Src.Dtos.report_type_dto import report_type_enum
 from Src.Logics.report_factory import report_factory
 from Src.Logics.settings_manager import settings_manager
 from Src.Logics.storage_manager import storage_manager
+from Src.Logics.convert_factory import convert_factory
+from Src.Logics.deserialize_factory import deserialize_factory
+from Src.Logics.entity_mapper import entity_mapper
+from Src.Logics.storage_adapter import storage_adapter
+from Src.Logics.crud_service import crud_service
+from Src.Core.validator import argument_exception, operation_exception
 
 api = connexion.FlaskApp(__name__)
 
@@ -18,10 +24,9 @@ def get_openapi_spec():
 
 def get_entities():
     """Возвращает типы сущностей, доступные для получения отчётов."""
-    return jsonify(storage.entity_types()), 200
+    return jsonify(crud.types()), 200
 
 
-@api.route("/api/get_report", methods=["GET"])
 def get_report():
     """Формирует отчёт сущности в явно указанном формате."""
     requested_format = request.args.get("format", "").strip().upper()
@@ -35,7 +40,7 @@ def get_report():
     except KeyError:
         return {"error": f"Неподдерживаемый формат: {requested_format}"}, 400
 
-    entity, error, status = storage.find_entity(requested_type, requested_code)
+    entity, error, status = crud.find_entity(requested_type, requested_code)
     if error is not None:
         return {"error": error}, status
 
@@ -51,7 +56,7 @@ def get_default_report(type: str = "", code: str = ""):
     if not requested_type or not requested_code:
         return make_response(jsonify({"error": "Необходимо указать type и code"}), 400)
 
-    entity, error, status = storage.find_entity(requested_type, requested_code)
+    entity, error, status = crud.find_entity(requested_type, requested_code)
     if error is not None:
         return make_response(jsonify({"error": error}), status)
 
@@ -60,7 +65,53 @@ def get_default_report(type: str = "", code: str = ""):
     return report.create_response(result)
 
 
-# Инициализация приложения
+def get_report_formats():
+    """Возвращает допустимые форматы отчётов в JSON."""
+    return jsonify([item.value for item in report_type_enum]), 200
+
+
+def list_entities(entity_type):
+    """Передаёт получение коллекции CRUD-сервису."""
+    return jsonify([mapper.encode(item) for item in crud.list(entity_type)]), 200
+
+
+def get_entity(entity_type, code):
+    """Получает сущность по индексу и преобразует её в ответ API."""
+    return jsonify(mapper.encode(crud.get(entity_type, code))), 200
+
+
+def create_entity(entity_type, body):
+    """Создаёт доменную сущность через отдельную прослойку."""
+    return jsonify(mapper.encode(crud.create(entity_type, body))), 201
+
+
+def replace_entity(entity_type, code, body):
+    """Заменяет данные сущности после проверки модели и связей."""
+    return jsonify(mapper.encode(crud.update(entity_type, code, body))), 200
+
+
+def delete_entity(entity_type, code):
+    """Удаляет свободную сущность через CRUD-сервис."""
+    crud.delete(entity_type, code)
+    return "", 204
+
+
+def invalid_data(error):
+    """Преобразует ошибку входных данных в HTTP 400."""
+    return jsonify(error=str(error)), 400
+
+
+def missing_entity(error):
+    """Преобразует отсутствие сущности в HTTP 404."""
+    return jsonify(error=str(error)), 404
+
+
+def conflicting_entity(error):
+    """Преобразует нарушение уникальности или связей в HTTP 409."""
+    return jsonify(error=str(error)), 409
+
+
+# Сборка приложения: прежнее хранилище остаётся источником начальных данных.
 settings = settings_manager()
 settings.load("settings.json")
 
@@ -68,9 +119,18 @@ storage = storage_manager()
 storage.convert(settings.settings)
 
 factory = report_factory(settings.settings)
+mapper = entity_mapper(deserialize_factory(), convert_factory())
+crud = crud_service(storage_adapter(storage, mapper, settings.settings))
+
+for error_type in (ValueError, argument_exception):
+    api.app.register_error_handler(error_type, invalid_data)
+api.app.register_error_handler(KeyError, missing_entity)
+api.app.register_error_handler(operation_exception, conflicting_entity)
 
 api.add_api(
     "openapi.yaml",
+    strict_validation=True,
+    validate_responses=True,
     swagger_ui_options=SwaggerUIOptions(
         swagger_ui_template_arguments={"openapi_spec_url": "/api-spec.yaml"},
     ),

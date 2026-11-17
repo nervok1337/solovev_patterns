@@ -9,6 +9,139 @@ servers:
     description: Local development server
 
 paths:
+  /api/report-formats:
+    get:
+      operationId: main.get_report_formats
+      summary: Получить форматы отчётов
+      responses:
+        '200':
+          description: Все допустимые форматы
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /api/entities/{entity_type}:
+    parameters:
+      - $ref: '#/components/parameters/EntityType'
+    get:
+      operationId: main.list_entities
+      summary: Получить коллекцию сущностей
+      responses:
+        '200':
+          description: Коллекция
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Entity'
+        '400':
+          $ref: '#/components/responses/Invalid'
+    post:
+      operationId: main.create_entity
+      summary: Создать сущность
+      requestBody:
+        $ref: '#/components/requestBodies/Entity'
+      responses:
+        '201':
+          $ref: '#/components/responses/Entity'
+        '400':
+          $ref: '#/components/responses/Invalid'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/entities/{entity_type}/{code}:
+    parameters:
+      - $ref: '#/components/parameters/EntityType'
+      - $ref: '#/components/parameters/Code'
+    get:
+      operationId: main.get_entity
+      summary: Получить сущность по коду
+      responses:
+        '200':
+          $ref: '#/components/responses/Entity'
+        '400':
+          $ref: '#/components/responses/Invalid'
+        '404':
+          $ref: '#/components/responses/Missing'
+    put:
+      operationId: main.replace_entity
+      summary: Заменить данные сущности
+      description: >-
+        Обязательные параметры конструктора передаются заново. Пропущенный код
+        сохраняется. Связанные объекты передаются как {ref: код}.
+        Изменять код используемой сущности запрещено.
+      requestBody:
+        $ref: '#/components/requestBodies/Entity'
+      responses:
+        '200':
+          $ref: '#/components/responses/Entity'
+        '400':
+          $ref: '#/components/responses/Invalid'
+        '404':
+          $ref: '#/components/responses/Missing'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: main.delete_entity
+      summary: Удалить неиспользуемую сущность
+      responses:
+        '204':
+          description: Сущность удалена
+        '400':
+          $ref: '#/components/responses/Invalid'
+        '404':
+          $ref: '#/components/responses/Missing'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/get_report:
+    get:
+      operationId: main.get_report
+      summary: Получить отчёт в выбранном формате
+      parameters:
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Отчёт
+          content:
+            text/plain:
+              schema:
+                type: string
+            text/html:
+              schema:
+                type: string
+            application/xml:
+              schema:
+                type: string
+            text/csv:
+              schema:
+                type: string
+            text/markdown:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Invalid'
+        '404':
+          $ref: '#/components/responses/Missing'
+
   /api/get_default_report:
     get:
       summary: Получить отчет по сущности
@@ -94,3 +227,65 @@ paths:
                 type: object
               example:
                 detail: "Ошибка: Невозможно получить список доменных сущностей!"
+
+components:
+  schemas:
+    Entity:
+      type: object
+      required: [unique_code]
+      properties:
+        unique_code:
+          type: string
+      additionalProperties: true
+    EntityInput:
+      type: object
+      additionalProperties: true
+      description: >-
+        Поля конструктора и изменяемые свойства модели. Ссылки на существующие
+        сущности передаются объектами {ref: код}; вложенное создание запрещено.
+  parameters:
+    EntityType:
+      name: entity_type
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Коллекция из GET /api/get_entities.
+    Code:
+      name: code
+      in: path
+      required: true
+      schema:
+        type: string
+  requestBodies:
+    Entity:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/EntityInput'
+  responses:
+    Entity:
+      description: Доменная сущность
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Entity'
+    Invalid:
+      description: Некорректные данные
+      content:
+        application/json:
+          schema:
+            type: object
+    Missing:
+      description: Сущность не найдена
+      content:
+        application/json:
+          schema:
+            type: object
+    Conflict:
+      description: Код занят или сущность используется другим объектом
+      content:
+        application/json:
+          schema:
+            type: object
