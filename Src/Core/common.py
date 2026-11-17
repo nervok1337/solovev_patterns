@@ -1,4 +1,4 @@
-from collections.abc import Mapping, Sequence, Set
+from collections.abc import Iterable, Mapping, Sequence, Set
 from inspect import signature
 from typing import get_type_hints
 
@@ -56,6 +56,17 @@ class common:
         return result
 
     @staticmethod
+    def __children(source: object):
+        """Возвращает непосредственные значения коллекции или публичных свойств."""
+        if isinstance(source, Mapping):
+            yield from source.values()
+        elif common.is_collection(source):
+            yield from source
+        elif source is not None:
+            for name in common.get_fields(source):
+                yield getattr(source, name)
+
+    @staticmethod
     def walk(source: object):
         """Обходит публичный граф объектов без повторного посещения узлов."""
         pending = [source]
@@ -66,9 +77,23 @@ class common:
                 continue
             visited[id(value)] = value
             yield value
-            if isinstance(value, Mapping):
-                pending.extend(value.values())
-            elif common.is_collection(value):
-                pending.extend(value)
-            elif value is not None:
-                pending.extend(getattr(value, name) for name in common.get_fields(value))
+            pending.extend(common.__children(value))
+
+    @staticmethod
+    def walk_links(roots: Iterable[object]):
+        """Выдаёт все рёбра графа, раскрывая каждый узел один раз для всех корней.
+
+        Сам список корней не образует связей. Ребро выдаётся и для уже
+        посещённого узла; словарь удерживает временные значения свойств.
+        """
+        pending = list(roots)
+        visited = {}
+        while pending:
+            owner = pending.pop()
+            if id(owner) in visited:
+                continue
+            visited[id(owner)] = owner
+            for linked in common.__children(owner):
+                yield owner, linked
+                if id(linked) not in visited:
+                    pending.append(linked)

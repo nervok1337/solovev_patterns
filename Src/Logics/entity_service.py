@@ -25,8 +25,8 @@ class entity_service:
     @classmethod
     def __check_links(cls, storage, target):
         """Запрещает удаление и смену кода объекта с входящими ссылками."""
-        for owner in cls.__roots(storage):
-            if owner is not target and any(node is target for node in common.walk(owner)):
+        for owner, linked in common.walk_links(cls.__roots(storage)):
+            if owner is not target and linked is target:
                 raise operation_exception("Сущность используется другим объектом")
 
     @classmethod
