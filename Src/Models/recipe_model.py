@@ -51,26 +51,6 @@ class recipe_model(entity_model):
         if value in self.__ingredients:
             self.__ingredients.remove(value)
 
-    def validate(self) -> None:
-        """Проверяет отсутствие циклов после обновления существующего рецепта."""
-        active = set()
-        visited = set()
-
-        def visit(recipe):
-            """Проверяет один путь вложенных технологических карт."""
-            if id(recipe) in active:
-                raise arguments_exception("ingredients", "Цикл технологических карт!")
-            if id(recipe) in visited:
-                return
-            active.add(id(recipe))
-            for item in recipe.ingredients:
-                if isinstance(item, recipe_model):
-                    visit(item)
-            active.remove(id(recipe))
-            visited.add(id(recipe))
-
-        visit(self)
-
     @staticmethod
     def __validate_ingredient(
         value: ingredient_model | recipe_model,

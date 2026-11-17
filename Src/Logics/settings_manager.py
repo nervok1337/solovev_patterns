@@ -1,26 +1,26 @@
-from collections.abc import Callable
+import json
 
 from Src.Core.abstract_manager import abstract_manager
 from Src.Core.validator import argument_exception, validator
+from Src.Dtos.report_type_dto import report_type_enum
+from Src.Models.organization_model import organization_model
 from Src.Models.settings_model import settings_model
 
 
 class settings_manager(abstract_manager):
     """Преобразует настройки и предоставляет единый экземпляр менеджера."""
 
-    def __new__(cls, restore: Callable, load: Callable):
+    def __new__(cls):
         """Возвращает единственный экземпляр менеджера настроек."""
         if not hasattr(cls, "instance"):
             cls.instance = super().__new__(cls)
         return cls.instance
 
-    def __init__(self, restore: Callable, load: Callable) -> None:
+    def __init__(self) -> None:
         """Инициализирует состояние только при первом создании singleton."""
         if getattr(self, "_settings_manager__initialized", False):
             return
 
-        self.__restore = restore
-        self.__load = load
         self.__settings = settings_model()
         self.__is_loaded = False
         self.__initialized = True
@@ -34,23 +34,56 @@ class settings_manager(abstract_manager):
         """Загружает настройки из JSON-файла и преобразует их в модель."""
         validator.validate(file_name, str)
 
-        try:
-            return self.__accept(self.__load(file_name, settings_model))
-        except ValueError as error:
-            raise argument_exception(str(error)) from error
+        with open(file_name, encoding="utf-8") as file:
+            data = json.load(file)
+
+        return self.convert(data)
 
     def convert(self, data: dict) -> bool:
-        """Передаёт восстановление модели общему внедрённому механизму."""
+        """Проверяет словарь и преобразует его в модель настроек."""
         validator.validate(data, dict)
-        try:
-            return self.__accept(self.__restore(data, settings_model))
-        except ValueError as error:
-            raise argument_exception(str(error)) from error
 
-    def __accept(self, candidate: settings_model) -> bool:
-        """Заменяет настройки только после успешного восстановления и проверки."""
-        candidate.validate()
-        self.__settings = candidate
+        organization_data = data.get("organization")
+        boss_name = data.get("boss_name", "")
+        account_name = data.get("account_name")
+        is_first_start = data.get("is_first_start")
+        response_format = data.get("response_format")
+
+        validator.validate(organization_data, dict)
+        validator.validate(organization_data.get("name"), str, 50)
+        validator.validate(organization_data.get("inn"), str)
+        validator.validate(organization_data.get("bik"), str)
+        validator.validate(organization_data.get("account"), str)
+        validator.validate(organization_data.get("ownership_form"), str)
+        if boss_name:
+            validator.validate(boss_name, str, 255)
+        validator.validate(account_name, str, 255)
+        validator.validate(is_first_start, bool)
+        validator.validate(response_format, str)
+
+        try:
+            converted_response_format = report_type_enum[response_format.strip().upper()]
+        except KeyError as error:
+            raise argument_exception(
+                f"Неподдерживаемый формат ответа: {response_format}"
+            ) from error
+
+        organization = organization_model(
+            organization_data["name"],
+            organization_data["inn"],
+            organization_data["bik"],
+            organization_data["account"],
+            organization_data["ownership_form"],
+        )
+        converted_settings = settings_model()
+        converted_settings.organization = organization
+        if boss_name:
+            converted_settings.boss_name = boss_name
+        converted_settings.account_name = account_name
+        converted_settings.is_first_start = is_first_start
+        converted_settings.response_format = converted_response_format
+
+        self.__settings = converted_settings
         self.__is_loaded = True
         return True
 

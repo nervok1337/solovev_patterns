@@ -42,7 +42,3 @@ class report_factory(abstarct_report_factory):
     def create_default(self) -> abstract_report:
         """Создаёт отчёт в формате из настроек приложения."""
         return self.create(self.__settings.response_format)
-
-    def available_formats(self) -> list[str]:
-        """Возвращает форматы из регистрации фабрики."""
-        return [item.value for item in self.__mapping]

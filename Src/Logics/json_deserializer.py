@@ -38,10 +38,6 @@ class json_deserializer:
         """Прочитать одну модель из JSON-строки с явно заданным типом."""
         return self.__loader.deserialize(self.__parse(text), model_type)
 
-    def load(self, file_name: str | Path, model_type: Any) -> object:
-        """Читает UTF-8 файл и восстанавливает модель общего ожидаемого типа."""
-        return self.loads(Path(file_name).read_text(encoding="utf-8"), model_type)
-
     def loads_storage(self, text: str) -> storage_data_dto:
         """Восстанавливает коллекции моделей хранилища из JSON-строки."""
         return self.__loader.deserialize_storage(self.__parse(text))

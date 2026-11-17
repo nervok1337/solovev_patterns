@@ -57,15 +57,4 @@ class entity_model(ABC):
 
         return self.__unique_code == other.__unique_code
 
-    def validate(self) -> None:
-        """Проверяет ограничения модели после изменения общего графа."""
-
-    def replace_with(self, candidate: "entity_model") -> None:
-        """Принимает состояние созданного конструктором кандидата, сохраняя ссылки."""
-        if type(candidate) is not type(self):
-            raise arguments_exception("candidate", "Тип сущности нельзя изменить!")
-        self.__dict__ = {name: self if value is candidate else value
-                         for name, value in vars(candidate).items()}
-        self.validate()
-
   

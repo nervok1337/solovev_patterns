@@ -1,11 +1,3 @@
-from contextlib import contextmanager
-from copy import deepcopy
-from threading import RLock
-from typing import get_args
-
-from Src.Core.abstract_storage import abstract_storage
-from Src.Core.entity_model import entity_model
-from Src.Core.validator import operation_exception
 from Src.Core.abstract_manager import abstract_manager
 from Src.Core.common import common
 from Src.Core.validator import validator
@@ -18,7 +10,7 @@ from Src.Models.settings_model import settings_model
 from Src.Models.warehouse_model import warehouse_model
 
 
-class storage_manager(abstract_manager, abstract_storage):
+class storage_manager(abstract_manager):
     """Хранит уникальные доменные объекты в едином экземпляре."""
 
     def __new__(cls):
@@ -38,8 +30,6 @@ class storage_manager(abstract_manager, abstract_storage):
         self.__nomenclatures: dict[str, nomenclature_model] = {}
         self.__recipes: dict[str, recipe_model] = {}
         self.__is_loaded = False
-        self.__additional = {}
-        self.__lock = RLock()
         self.__initialized = True
 
     @property
@@ -50,8 +40,6 @@ class storage_manager(abstract_manager, abstract_storage):
     def convert(self, settings: settings_model) -> bool:
         """Формирует первичные данные приложения при первом старте."""
         validator.validate(settings, settings_model)
-
-        self.__index(settings)
 
         if not settings.is_first_start:
             return False
@@ -128,7 +116,6 @@ class storage_manager(abstract_manager, abstract_storage):
         self.add_recipe(milk_caramel)
 
         self.__is_loaded = True
-        self.__index(list(self.__collections().values()))
         return True
 
     def add_range(self, value: range_model) -> None:
@@ -178,12 +165,21 @@ class storage_manager(abstract_manager, abstract_storage):
             "warehouse": "warehouses",
         }
         collection_name = type_aliases.get(entity_type, entity_type)
-        try:
-            return self.get_entity(collection_name, entity_code), None, None
-        except ValueError:
+        if collection_name not in self.entity_types():
             return None, f"Неподдерживаемый тип: {entity_type}", 400
-        except KeyError:
+
+        entity = next(
+            (
+                item
+                for item in getattr(self, collection_name)
+                if item.unique_code == entity_code
+            ),
+            None,
+        )
+        if entity is None:
             return None, f"Сущность с кодом {entity_code} не найдена", 404
+
+        return entity, None, None
 
     @property
     def ranges(self) -> list[range_model]:
@@ -209,91 +205,3 @@ class storage_manager(abstract_manager, abstract_storage):
     def recipes(self) -> list[recipe_model]:
         """Возвращает список технологических карт."""
         return list(self.__recipes.values())
-
-    def model_types(self) -> dict[str, type[entity_model]]:
-        """Определяет типы коллекций и вложенных сущностей по аннотациям."""
-        result = {}
-
-        def entities_in(annotation):
-            """Извлекает классы сущностей из составной аннотации."""
-            if isinstance(annotation, type) and issubclass(annotation, entity_model):
-                yield annotation
-            for argument in get_args(annotation):
-                yield from entities_in(argument)
-
-        pending = [type(self), settings_model]
-        visited = set()
-        while pending:
-            model_type = pending.pop(0)
-            if model_type in visited:
-                continue
-            visited.add(model_type)
-            for name, annotation in common.get_annotations(model_type).items():
-                for related in entities_in(annotation):
-                    if related in result.values():
-                        continue
-                    if name in result:
-                        raise ValueError(f"Неоднозначная коллекция {name}")
-                    result[name] = related
-                    pending.append(related)
-        return result
-
-    def __collections(self):
-        """Предоставляет собственные словари через имена публичных коллекций."""
-        return {name: getattr(self, f"_{__class__.__name__}__{name}")
-                for name in self.entity_types()}
-
-    def __index(self, source):
-        """Индексирует вложенные модели, сохраняя прежний формат публичной выгрузки."""
-        types = self.model_types()
-        roots = self.__collections()
-        for item in common.walk(source):
-            if not isinstance(item, entity_model):
-                continue
-            name = next(name for name, model_type in types.items() if type(item) is model_type)
-            if item.unique_code not in roots.get(name, {}):
-                self.__additional.setdefault(name, {}).setdefault(item.unique_code, item)
-
-    def entities(self, collection: str) -> list[entity_model]:
-        """Возвращает корневые и вложенные сущности указанного типа."""
-        if collection not in self.model_types():
-            raise ValueError(f"Неизвестная коллекция: {collection}")
-        values = self.__additional.get(collection, {}).copy()
-        values.update(self.__collections().get(collection, {}))
-        return list(values.values())
-
-    def get_entity(self, collection: str, code: str) -> entity_model:
-        """Находит объект без привязки результата к HTTP."""
-        for entity in self.entities(collection):
-            if entity.unique_code == code:
-                return entity
-        raise KeyError(f"Сущность {collection}/{code} не найдена")
-
-    def save_entity(self, collection: str, entity: entity_model) -> None:
-        """Сохраняет сущность, проверяя тип и уникальность кода."""
-        types = self.model_types()
-        if collection not in types or type(entity) is not types[collection]:
-            raise ValueError("Неверный тип коллекции или сущности")
-        if any(item.unique_code == entity.unique_code for name in types for item in self.entities(name)):
-            raise operation_exception("Код сущности уже занят")
-        entity.validate()
-        target = self.__collections().get(collection)
-        if target is None:
-            target = self.__additional.setdefault(collection, {})
-        target[entity.unique_code] = entity
-        self.__index(entity)
-
-    def delete_entity(self, collection: str, code: str) -> None:
-        """Удаляет объект из принадлежащего менеджеру словаря."""
-        self.get_entity(collection, code)
-        for values in (self.__collections().get(collection, {}), self.__additional.get(collection, {})):
-            values.pop(code, None)
-
-    @contextmanager
-    def transaction(self):
-        """Изолирует операцию и фиксирует общий граф только при успехе."""
-        with self.__lock:
-            staged = object.__new__(type(self))
-            staged.__dict__ = deepcopy(vars(self), {id(self.__lock): self.__lock})
-            yield staged
-            self.__dict__ = staged.__dict__

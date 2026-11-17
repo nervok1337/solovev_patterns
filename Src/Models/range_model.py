@@ -39,18 +39,6 @@ class range_model(entity_model):
 
         self.base_range = self if base_range is None else base_range
 
-    def validate(self) -> None:
-        """Проверяет циклы пересчёта и коэффициент базовой единицы."""
-        visited = set()
-        current = self
-        while current.base_range is not current:
-            if id(current) in visited:
-                raise arguments_exception("base_range", "Цикл единиц измерения!")
-            visited.add(id(current))
-            current = current.base_range
-        if current.conversion_factor != 1:
-            raise arguments_exception("conversion_factor", "Коэффициент базы должен быть равен 1!")
-
     @property
     def conversion_factor(self) -> float:
         """Возвращает коэффициент пересчёта в базовую единицу."""
