@@ -1,3 +1,5 @@
+from datetime import date
+
 import connexion
 from connexion.options import SwaggerUIOptions
 from flask import jsonify, make_response, request, send_from_directory
@@ -11,6 +13,8 @@ from Src.Logics.deserialize_factory import deserialize_factory
 from Src.Logics.entity_mapper import entity_mapper
 from Src.Logics.storage_adapter import storage_adapter
 from Src.Logics.crud_service import crud_service
+from Src.Logics.turnover_prototype import turnover_prototype
+from Src.Models.transaction_model import transaction_model
 from Src.Core.validator import argument_exception, operation_exception
 
 api = connexion.FlaskApp(__name__)
@@ -75,6 +79,31 @@ def list_entities(entity_type):
     return jsonify([mapper.encode(item) for item in crud.list(entity_type)]), 200
 
 
+def filter_entities(entity_type, body):
+    """Передаёт условия общего DTO единственной точке отбора в CRUD-сервисе."""
+    selected = crud.select(entity_type, body.get("filters", []))
+    return jsonify([mapper.encode(item) for item in selected.data]), 200
+
+
+def get_turnover(body):
+    """Строит ОСВ через тот же отбор с конкретным прототипом отчёта."""
+    selected = crud.select("transactions", body.get("filters", []), turnover_prototype,
+                           start=date.fromisoformat(body["start"]), end=date.fromisoformat(body["end"]))
+    return jsonify([mapper.encode(row) for row in selected.rows]), 200
+
+
+def get_storage_snapshot():
+    """Выгружает текущие коллекции целиком через существующую фабрику конвертеров."""
+    snapshot = crud.snapshot()
+    return jsonify(convertors.create(snapshot).convert(snapshot, "storage")["storage"]), 200
+
+
+def restore_storage_snapshot(body):
+    """Передаёт полную загрузку снимка сервису с атомарной заменой данных."""
+    crud.restore_snapshot(body)
+    return "", 204
+
+
 def get_entity(entity_type, code):
     """Получает сущность по индексу и преобразует её в ответ API."""
     return jsonify(mapper.encode(crud.get(entity_type, code))), 200
@@ -119,8 +148,10 @@ storage = storage_manager()
 storage.convert(settings.settings)
 
 factory = report_factory(settings.settings)
-mapper = entity_mapper(deserialize_factory(), convert_factory())
-crud = crud_service(storage_adapter(storage, mapper, settings.settings))
+convertors = convert_factory()
+mapper = entity_mapper(deserialize_factory(), convertors)
+crud = crud_service(storage_adapter(storage, mapper, settings.settings,
+                                    additional_types={"transactions": transaction_model}))
 
 for error_type in (ValueError, argument_exception):
     api.app.register_error_handler(error_type, invalid_data)

@@ -9,6 +9,97 @@ servers:
     description: Local development server
 
 paths:
+  /api/storage/snapshot:
+    get:
+      operationId: main.get_storage_snapshot
+      summary: Выгрузить все актуальные коллекции одним JSON
+      description: Включает транзакции и полные вложенные сущности с их уникальными кодами.
+      responses:
+        '200':
+          description: Полный снимок текущего состояния CRUD
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageSnapshot'
+    post:
+      operationId: main.restore_storage_snapshot
+      summary: Целиком восстановить коллекции из снимка
+      description: >-
+        Требует все зарегистрированные коллекции, включая пустые.
+        Вложенные сущности передаются целиком, как при выгрузке.
+        Неверный снимок отклоняется без изменения текущих данных.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorageSnapshot'
+      responses:
+        '204':
+          description: Состояние полностью восстановлено
+        '400':
+          $ref: '#/components/responses/Invalid'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/entities/{entity_type}/filter:
+    parameters:
+      - $ref: '#/components/parameters/EntityType'
+    post:
+      operationId: main.filter_entities
+      summary: Отобрать сущности общим прототипом
+      description: >-
+        Условия объединяются через И. EQUALS — точное равенство,
+        LIKE — вхождение подстроки; обе операции учитывают регистр.
+        Путь к name или unique_code может проходить через свойства и коллекции,
+        например ingredients.nomenclature.name. В коллекции достаточно одного
+        совпадения. Пустой список условий возвращает всю коллекцию.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FilterRequest'
+      responses:
+        '200':
+          description: Выбранные сущности с прежними уникальными кодами
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Entity'
+        '400':
+          $ref: '#/components/responses/Invalid'
+
+  /api/turnover:
+    post:
+      operationId: main.get_turnover
+      summary: Получить количественную оборотно-сальдовую ведомость
+      description: >-
+        Использует транзакции из CRUD и тот же механизм фильтрации.
+        Границы периода включены, используются календарные даты period
+        в сохранённом часовом поясе транзакции. Фильтры применяются ко всем
+        движениям, включая начальный остаток. Разные склады, товары и единицы
+        измерения выводятся отдельными строками без пересчёта единиц.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TurnoverRequest'
+      responses:
+        '200':
+          description: Начальный остаток, приход, расход и конечный остаток
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TurnoverRow'
+        '400':
+          $ref: '#/components/responses/Invalid'
+
   /api/report-formats:
     get:
       operationId: main.get_report_formats
@@ -230,6 +321,81 @@ paths:
 
 components:
   schemas:
+    StorageSnapshot:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          $ref: '#/components/schemas/Entity'
+    FilterCondition:
+      type: object
+      additionalProperties: false
+      required: [field, value]
+      properties:
+        field:
+          type: string
+          minLength: 1
+          description: Публичный путь, завершающийся name или unique_code
+          example: group.name
+        value:
+          type: string
+          example: Продукты
+        comparison:
+          type: string
+          enum: [EQUALS, LIKE]
+          default: EQUALS
+    FilterConditions:
+      type: array
+      default: []
+      items:
+        $ref: '#/components/schemas/FilterCondition'
+    FilterRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        filters:
+          $ref: '#/components/schemas/FilterConditions'
+    TurnoverRequest:
+      type: object
+      additionalProperties: false
+      required: [start, end]
+      properties:
+        start:
+          type: string
+          format: date
+          example: '2026-11-01'
+        end:
+          type: string
+          format: date
+          example: '2026-11-30'
+        filters:
+          $ref: '#/components/schemas/FilterConditions'
+    EntityReference:
+      type: object
+      required: [ref]
+      additionalProperties: false
+      properties:
+        ref:
+          type: string
+    TurnoverRow:
+      type: object
+      additionalProperties: false
+      required: [storage, nomenclature, range, opening_balance, income, expense, closing_balance]
+      properties:
+        storage:
+          $ref: '#/components/schemas/EntityReference'
+        nomenclature:
+          $ref: '#/components/schemas/EntityReference'
+        range:
+          $ref: '#/components/schemas/EntityReference'
+        opening_balance:
+          type: number
+        income:
+          type: number
+        expense:
+          type: number
+        closing_balance:
+          type: number
     Entity:
       type: object
       required: [unique_code]

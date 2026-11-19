@@ -9,10 +9,11 @@ from Src.Logics.storage_repository import storage_repository
 class storage_adapter:
     """Создаёт состояние CRUD из прежнего хранилища, не изменяя его интерфейс и выгрузку."""
 
-    def __init__(self, storage, mapper, settings=None):
+    def __init__(self, storage, mapper, settings=None, additional_types=None):
         """Однократно обнаруживает коллекции и индексирует их объекты и зависимости."""
         self.__mapper = mapper
-        types, roots = {}, []
+        types = {} if additional_types is None else additional_types.copy()
+        roots = []
         sources = [storage] + ([] if settings is None else [settings])
         for source in sources:
             for name in common.get_fields(source):
@@ -80,6 +81,18 @@ class storage_adapter:
         """Восстанавливает запрошенную коллекцию в едином контексте чтения."""
         resolve = self.__resolver()
         return [resolve(code) for code in self.repository.codes(collection)]
+
+    def snapshot(self) -> dict:
+        """Возвращает актуальные коллекции с общими экземплярами всех зависимостей."""
+        resolve = self.__resolver()
+        return {name: [resolve(code) for code in self.repository.codes(name)]
+                for name in self.repository.types()}
+
+    def restore_snapshot(self, collections: dict) -> None:
+        """Заменяет записи целиком после проверки моделей и всех связей снимка."""
+        records = [(name, self.__mapper.record(item))
+                   for name, items in collections.items() for item in items]
+        self.repository.load(records, replace=True)
 
     def prepare(self, collection, body, previous=None):
         """Проверяет кандидата существующими конструкторами до изменения индексов."""
