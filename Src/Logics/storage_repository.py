@@ -48,10 +48,10 @@ class storage_repository:
             for item in value:
                 yield from cls.__references(item)
 
-    def load(self, records):
-        """Однократно загружает все корни и связи независимо от порядка записей."""
+    def load(self, records, *, replace=False):
+        """Атомарно загружает граф; повторная загрузка требует явной замены состояния."""
         with self.__lock:
-            if self.__data:
+            if self.__data and not replace:
                 raise operation_exception("Начальные данные уже загружены")
             data, collections, links = {}, {name: {} for name in self.__types}, {}
             for collection, values in records:

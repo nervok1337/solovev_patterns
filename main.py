@@ -1,3 +1,5 @@
+from datetime import date
+
 import connexion
 from connexion.options import SwaggerUIOptions
 from flask import jsonify, make_response, request, send_from_directory
@@ -75,6 +77,31 @@ def list_entities(entity_type):
     return jsonify([mapper.encode(item) for item in crud.list(entity_type)]), 200
 
 
+def filter_entities(entity_type, body):
+    """Передаёт условия общего DTO единственной точке отбора в CRUD-сервисе."""
+    selected = crud.select(entity_type, body.get("filters", []))
+    return jsonify([mapper.encode(item) for item in selected.data]), 200
+
+
+def get_turnover(body):
+    """Передаёт условия и необязательные границы периода отдельному расчёту ОСВ."""
+    period = {name: date.fromisoformat(body[name]) for name in ("start", "end") if name in body}
+    rows = crud.turnover(body.get("filters", []), **period)
+    return jsonify([mapper.encode(row) for row in rows]), 200
+
+
+def get_storage_snapshot():
+    """Выгружает текущие коллекции целиком через существующую фабрику конвертеров."""
+    snapshot = crud.snapshot()
+    return jsonify(convertors.create(snapshot).convert(snapshot, "storage")["storage"]), 200
+
+
+def restore_storage_snapshot(body):
+    """Передаёт полную загрузку снимка сервису с атомарной заменой данных."""
+    crud.restore_snapshot(body)
+    return "", 204
+
+
 def get_entity(entity_type, code):
     """Получает сущность по индексу и преобразует её в ответ API."""
     return jsonify(mapper.encode(crud.get(entity_type, code))), 200
@@ -119,7 +146,8 @@ storage = storage_manager()
 storage.convert(settings.settings)
 
 factory = report_factory(settings.settings)
-mapper = entity_mapper(deserialize_factory(), convert_factory())
+convertors = convert_factory()
+mapper = entity_mapper(deserialize_factory(), convertors)
 crud = crud_service(storage_adapter(storage, mapper, settings.settings))
 
 for error_type in (ValueError, argument_exception):

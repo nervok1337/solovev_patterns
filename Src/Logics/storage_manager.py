@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from Src.Core.abstract_manager import abstract_manager
 from Src.Core.common import common
 from Src.Core.validator import validator
@@ -7,6 +9,7 @@ from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
 from Src.Models.recipe_model import recipe_model
 from Src.Models.settings_model import settings_model
+from Src.Models.transaction_model import transaction_model
 from Src.Models.warehouse_model import warehouse_model
 
 
@@ -29,6 +32,7 @@ class storage_manager(abstract_manager):
         self.__warehouses: dict[str, warehouse_model] = {}
         self.__nomenclatures: dict[str, nomenclature_model] = {}
         self.__recipes: dict[str, recipe_model] = {}
+        self.__transactions: dict[str, transaction_model] = {}
         self.__is_loaded = False
         self.__initialized = True
 
@@ -115,6 +119,13 @@ class storage_manager(abstract_manager):
         )
         self.add_recipe(milk_caramel)
 
+        month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        for nomenclature, warehouse in ((water, bar), (milk, kitchen),
+                                        (sugar, main_warehouse), (package, main_warehouse)):
+            for value, period in ((100, month_start - timedelta(days=1)),
+                                  (40, month_start), (-15, month_start + timedelta(days=1))):
+                self.add_transaction(transaction_model(nomenclature, warehouse, value, period))
+
         self.__is_loaded = True
         return True
 
@@ -142,6 +153,11 @@ class storage_manager(abstract_manager):
         """Добавляет технологическую карту без дублирования."""
         validator.validate(value, recipe_model)
         self.__recipes.setdefault(value.unique_code, value)
+
+    def add_transaction(self, value: transaction_model) -> None:
+        """Добавляет движение без дублирования его уникального кода."""
+        validator.validate(value, transaction_model)
+        self.__transactions.setdefault(value.unique_code, value)
 
     def entity_types(self) -> list[str]:
         """Находит публичные коллекции хранилища через общую рефлексию."""
@@ -205,3 +221,8 @@ class storage_manager(abstract_manager):
     def recipes(self) -> list[recipe_model]:
         """Возвращает список технологических карт."""
         return list(self.__recipes.values())
+
+    @property
+    def transactions(self) -> list[transaction_model]:
+        """Возвращает копию списка движений номенклатуры."""
+        return list(self.__transactions.values())

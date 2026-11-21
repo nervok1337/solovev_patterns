@@ -384,10 +384,10 @@ def test_equals_convert_factory_create_full_storage(populated_storage):
 
     # Проверки
     assert set(result) == {
-        "ranges", "groups", "warehouses", "nomenclatures", "recipes", "is_loaded",
+        "ranges", "groups", "warehouses", "nomenclatures", "recipes", "transactions", "is_loaded",
     }
     assert result["is_loaded"] is True
-    for name in ["ranges", "groups", "warehouses", "nomenclatures", "recipes"]:
+    for name in ["ranges", "groups", "warehouses", "nomenclatures", "recipes", "transactions"]:
         original_items = getattr(source, name)
         assert len(result[name]) == len(original_items)
         assert {item["unique_code"] for item in result[name]} == {

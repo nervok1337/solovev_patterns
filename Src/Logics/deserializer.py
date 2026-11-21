@@ -19,3 +19,11 @@ class deserializer:
     def deserialize_storage(self, source: dict) -> storage_data_dto:
         """Совместимый вход для снимка хранилища; поля берутся из DTO рефлексией."""
         return self.deserialize(source, storage_data_dto)
+
+    def deserialize_collections(self, source: dict, model_types: dict) -> dict:
+        """Восстанавливает все зарегистрированные коллекции в общем контексте ссылок."""
+        if not isinstance(source, dict) or source.keys() != model_types.keys():
+            raise ValueError("Снимок должен содержать все зарегистрированные коллекции")
+        context = _restore_context(self.__factory)
+        return {name: context.restore(source[name], list[model_type])
+                for name, model_type in model_types.items()}

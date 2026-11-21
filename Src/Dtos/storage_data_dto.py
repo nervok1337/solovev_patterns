@@ -2,6 +2,7 @@ from Src.Models.nomenclature_group_model import nomenclature_group_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
 from Src.Models.recipe_model import recipe_model
+from Src.Models.transaction_model import transaction_model
 from Src.Models.warehouse_model import warehouse_model
 
 
@@ -12,7 +13,8 @@ class storage_data_dto:
                  groups: list[nomenclature_group_model],
                  warehouses: list[warehouse_model],
                  nomenclatures: list[nomenclature_model],
-                 recipes: list[recipe_model], is_loaded: bool):
+                 recipes: list[recipe_model], is_loaded: bool,
+                 transactions: list[transaction_model] | None = None):
         """Сохраняет восстановленные коллекции и признак формирования первичных данных."""
         self.__ranges = ranges
         self.__groups = groups
@@ -20,6 +22,7 @@ class storage_data_dto:
         self.__nomenclatures = nomenclatures
         self.__recipes = recipes
         self.__is_loaded = is_loaded
+        self.__transactions = [] if transactions is None else transactions.copy()
 
     @property
     def ranges(self) -> list[range_model]:
@@ -50,3 +53,8 @@ class storage_data_dto:
     def is_loaded(self) -> bool:
         """Возвращает сохранённый признак формирования первичных данных."""
         return self.__is_loaded
+
+    @property
+    def transactions(self) -> list[transaction_model]:
+        """Возвращает копию списка восстановленных движений."""
+        return self.__transactions.copy()

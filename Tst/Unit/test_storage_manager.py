@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 
 from Src.Core.abstract_manager import abstract_manager
@@ -53,6 +55,7 @@ def test_not_empty_storage_manager_convert():
     assert manager.warehouses
     assert manager.nomenclatures
     assert manager.recipes
+    assert manager.transactions
 
 def test_equals_storage_manager_create():
     # Подготовка
@@ -118,6 +121,7 @@ def test_not_convert_storage_manager_not_first_start():
     assert manager.warehouses == []
     assert manager.nomenclatures == []
     assert manager.recipes == []
+    assert manager.transactions == []
 
 
 def test_storage_manager_inherits_abstract_manager():
@@ -356,3 +360,31 @@ def test_find_entity_storage_manager_reports_missing_entity():
     assert entity is None
     assert error == "Сущность с кодом missing не найдена"
     assert status == 404
+
+
+def test_equals_storage_manager_first_start_transactions_and_shared_references():
+    """<summary>Первый старт создаёт историю, приход и расход с общими справочниками без повторов.</summary>"""
+    # Подготовка
+    manager = storage_manager()
+    settings = create_settings()
+
+    # Действие
+    manager.convert(settings)
+    original = manager.transactions
+    manager.convert(settings)
+    month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    # Проверки
+    assert len(original) == 12
+    assert manager.transactions == original
+    assert len({item.unique_code for item in original}) == len(original)
+    for nomenclature in manager.nomenclatures:
+        movements = [item for item in original if item.nomenclature is nomenclature]
+        assert len(movements) == 3
+        assert any(item.period < month_start for item in movements)
+        assert any(item.period >= month_start and item.value > 0 for item in movements)
+        assert any(item.period >= month_start and item.value < 0 for item in movements)
+        assert all(item.range is nomenclature.range for item in movements)
+        assert all(any(item.storage is warehouse for warehouse in manager.warehouses) for item in movements)
+    original.clear()
+    assert len(manager.transactions) == 12
