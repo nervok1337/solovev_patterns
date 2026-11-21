@@ -58,16 +58,16 @@ def test_equals_filter_api_nested_recipes_units_and_like(client):
 
 @pytest.mark.parametrize("body", [
     {"filters": [{"field": "name", "value": "x", "comparison": "UNKNOWN"}]},
-    {"filters": [{"field": "name", "value": 123}]},
+    {"filters": [{"field": 123, "value": "x"}]},
     {"filters": [{"field": "__class__.name", "value": "x"}]},
     {"filters": [{"field": "storage.missing.name", "value": "x"}]},
-    {"filters": [{"field": "value", "value": "10"}]},
+    {"filters": [{"field": "", "value": "10"}]},
     {"filters": [{"value": "x"}]},
     {"filters": None},
     {"extra": True},
     [],
 ])
-def test_raises_filter_api_invalid_requests_on_empty_collection(client, body):
+def test_raises_filter_api_invalid_requests_on_empty_collection(client, empty_transactions, body):
     """<summary>Неверные DTO и пути дают HTTP 400 даже при отсутствии транзакций.</summary>"""
     # Подготовка
     assert client.get("/api/entities/transactions").json() == []
@@ -90,6 +90,15 @@ def test_raises_filter_api_unknown_collection(client):
 
     # Проверки
     assert response.status_code == 400
+
+
+@pytest.fixture
+def empty_transactions(client):
+    """Очищает движения через публичный снимок, сохраняя стартовые справочники."""
+    snapshot = client.get("/api/storage/snapshot").json()
+    snapshot["transactions"] = []
+    response = client.post("/api/storage/snapshot", json=snapshot)
+    assert response.status_code == 204, response.text
 
 
 @pytest.fixture
@@ -132,8 +141,9 @@ def test_success_transaction_crud_reference_protection_and_filter(client, moveme
 
 
 def test_equals_turnover_api_filters_history_and_period_boundaries(client, movement_inputs):
-    """<summary>ОСВ считает всю отфильтрованную историю и обороты периода из актуальных записей CRUD.</summary>"""
+    """<summary>ОСВ считает остаток из истории и обороты периода с отбором нужных измерений.</summary>"""
     # Подготовка
+    initial_count = len(client.get("/api/entities/transactions").json())
     for value, period in [(100, "2026-10-30T12:00"), (-20, "2026-10-31T23:59"),
                           (40, "2026-11-01T00:00"), (-30, "2026-11-30T23:59"),
                           (1000, "2026-12-01T00:00")]:
@@ -148,7 +158,8 @@ def test_equals_turnover_api_filters_history_and_period_boundaries(client, movem
 
     # Действие
     response = client.post("/api/turnover", json=body)
-    all_rows = client.post("/api/turnover", json={"start": body["start"], "end": body["end"]})
+    all_rows = client.post("/api/turnover", json={"start": body["start"], "end": body["end"],
+                                                "filters": [body["filters"][1]]})
     snapshot = client.get("/api/entities/transactions").json()
 
     # Проверки
@@ -157,13 +168,13 @@ def test_equals_turnover_api_filters_history_and_period_boundaries(client, movem
     assert row["storage"] == movement_inputs["storage"]
     assert row["nomenclature"] == movement_inputs["nomenclature"]
     assert (row["opening_balance"], row["income"], row["expense"], row["closing_balance"]) == (80, 40, 30, 90)
-    assert len(all_rows.json()) == 2 and len(snapshot) == 6
+    assert len(all_rows.json()) == 2 and len(snapshot) == initial_count + 6
 
 
 @pytest.mark.parametrize("body", [
     {"start": "2026-12-01", "end": "2026-11-01"},
     {"start": "not-a-date", "end": "2026-11-01"},
-    {"start": "2026-11-01"},
+    {"start": None},
     {"start": "2026-11-01", "end": "2026-11-30", "filters": [{"field": "unknown.name", "value": "x"}]},
 ])
 def test_raises_turnover_api_invalid_period_or_filter(client, body):
@@ -229,7 +240,9 @@ def test_equals_storage_snapshot_round_trip_current_crud_and_turnover(client, mo
     assert client.delete(f"/api/entities/nomenclatures/{movement_inputs['nomenclature']['ref']}").status_code == 409
     assert transaction.nomenclature is next(item for item in graph["nomenclatures"]
                                             if item.unique_code == transaction.nomenclature.unique_code)
-    assert saved.json()["transactions"][0]["nomenclature"]["unique_code"] == movement_inputs["nomenclature"]["ref"]
+    saved_movement = next(item for item in saved.json()["transactions"]
+                          if item["unique_code"] == movement["unique_code"])
+    assert saved_movement["nomenclature"]["unique_code"] == movement_inputs["nomenclature"]["ref"]
 
 
 @pytest.mark.parametrize("fault", ["missing", "unknown", "orphan", "conflict", "duplicate", "invalid"])
@@ -264,15 +277,18 @@ def test_unchanged_storage_snapshot_invalid_graph_is_atomic(client, movement_inp
 def test_separate_turnover_api_units_and_single_day_period(client, movement_inputs):
     """<summary>Один день включает обе границы, а движения одного товара в разных единицах не смешиваются.</summary>"""
     # Подготовка
+    product = client.get(f"/api/entities/nomenclatures/{movement_inputs['nomenclature']['ref']}").json()
     unit = create(client, "ranges", {"name": "Килограмм ОСВ", "conversion_factor": 1000,
-                                      "base_range": client.get(f"/api/entities/nomenclatures/{movement_inputs['nomenclature']['ref']}").json()["range"]})
+                                      "base_range": product["range"]})
     for value, period in [(2, "2026-11-01T00:00"), (-1, "2026-11-01T23:59:59"),
                           (100, "2026-11-02T00:00")]:
         create(client, "transactions", {**movement_inputs, "range": ref(unit), "value": value, "period": period})
     create(client, "transactions", {**movement_inputs, "value": 5, "period": "2026-11-01T12:00"})
 
     # Действие
-    response = client.post("/api/turnover", json={"start": "2026-11-01", "end": "2026-11-01"})
+    response = client.post("/api/turnover", json={"start": "2026-11-01", "end": "2026-11-01", "filters": [
+        {"field": "nomenclature.unique_code", "value": product["unique_code"]},
+    ]})
 
     # Проверки
     assert response.status_code == 200, response.text
@@ -280,3 +296,107 @@ def test_separate_turnover_api_units_and_single_day_period(client, movement_inpu
     row = next(item for item in response.json() if item["range"] == ref(unit))
     assert (row["opening_balance"], row["income"], row["expense"], row["closing_balance"]) == (0, 2, 1, 1)
 
+
+@pytest.mark.parametrize("collection,field,value,comparison,names", [
+    ("nomenclatures", "full_name", "Сахар-песок", "EQUALS", {"Сахар"}),
+    ("nomenclatures", "full_name", "питьев", "LIKE", {"Вода", "Молоко"}),
+    ("ranges", "conversion_factor", 1000, "EQUALS", {"Килограмм", "Литр"}),
+    ("nomenclatures", "range.conversion_factor", 1000, "EQUALS", {"Вода", "Молоко", "Сахар"}),
+    ("recipes", "gross_weight", 510, "EQUALS", {"Молочная карамель"}),
+    ("ranges", "conversion_factor", 1000, "LIKE", set()),
+    ("nomenclatures", "full_name", None, "EQUALS", set()),
+])
+def test_equals_filter_api_any_public_property(client, collection, field, value, comparison, names):
+    """<summary>Общий прототип отбирает другие публичные свойства и числовые вложения без белого списка.</summary>"""
+    # Подготовка
+    before = client.get(f"/api/entities/{collection}").json()
+    body = {"filters": [{"field": field, "value": value, "comparison": comparison}]}
+
+    # Действие
+    response = client.post(f"/api/entities/{collection}/filter", json=body)
+
+    # Проверки
+    assert response.status_code == 200, response.text
+    assert {item["name"] for item in response.json()} == names
+    assert client.get(f"/api/entities/{collection}").json() == before
+
+
+def test_equals_filter_api_datetime_property(client, movement_inputs):
+    """<summary>Дата движения сравнивается в общем JSON-представлении без отдельного фильтра транзакций.</summary>"""
+    # Подготовка
+    movement = create(client, "transactions", {**movement_inputs, "value": 10,
+                                               "period": "2026-11-15T12:30:00+08:00"})
+
+    # Действие
+    response = client.post("/api/entities/transactions/filter", json={"filters": [
+        {"field": "period", "value": movement["period"]},
+        {"field": "nomenclature.unique_code", "value": movement_inputs["nomenclature"]["ref"]},
+    ]})
+
+    # Проверки
+    assert response.status_code == 200 and response.json() == [movement]
+
+
+@pytest.mark.parametrize("condition", [
+    {"field": "value", "value": -5},
+    {"field": "period", "value": "2026-11-30T23:59:00"},
+])
+def test_equals_turnover_opening_balance_before_prototype_filter(client, movement_inputs, condition):
+    """<summary>Отбор суммы или даты сохраняет начальный остаток, заранее рассчитанный по исходной истории.</summary>"""
+    # Подготовка
+    for value, period in [(100, "2026-10-30"), (-20, "2026-10-31"),
+                          (40, "2026-11-01"), (-5, "2026-11-30T23:59")]:
+        create(client, "transactions", {**movement_inputs, "value": value, "period": period})
+    filters = [{"field": "nomenclature.unique_code", "value": movement_inputs["nomenclature"]["ref"]},
+               condition]
+
+    # Действие
+    response = client.post("/api/turnover", json={"start": "2026-11-01", "end": "2026-11-30",
+                                                "filters": filters})
+
+    # Проверки
+    assert response.status_code == 200, response.text
+    row, = response.json()
+    assert (row["opening_balance"], row["income"], row["expense"], row["closing_balance"]) == (80, 0, 5, 75)
+
+
+@pytest.mark.parametrize("period,expected", [
+    ({}, (0, 1140, 25, 1115)),
+    ({"start": "2026-11-01"}, (80, 1040, 5, 1115)),
+    ({"end": "2026-11-30"}, (0, 140, 25, 115)),
+    ({"start": "2026-11-01", "end": "2026-11-30"}, (80, 40, 5, 115)),
+    ({"start": "2026-11-01", "end": "2026-11-30",
+      "filters": [{"field": "value", "value": 100}]}, (80, 0, 0, 80)),
+])
+def test_equals_turnover_optional_period_and_opening_only_row(client, movement_inputs, period, expected):
+    """<summary>ОСВ допускает отсутствие границ периода и сохраняет строку с одним начальным остатком.</summary>"""
+    # Подготовка
+    for value, when in [(100, "2026-10-30"), (-20, "2026-10-31"), (40, "2026-11-01"),
+                        (-5, "2026-11-30"), (1000, "2026-12-01")]:
+        create(client, "transactions", {**movement_inputs, "value": value, "period": when})
+    body = {**period, "filters": [
+        {"field": "nomenclature.unique_code", "value": movement_inputs["nomenclature"]["ref"]},
+        *period.get("filters", []),
+    ]}
+
+    # Действие
+    response = client.post("/api/turnover", json=body)
+
+    # Проверки
+    assert response.status_code == 200, response.text
+    row, = response.json()
+    assert (row["opening_balance"], row["income"], row["expense"], row["closing_balance"]) == expected
+
+
+def test_not_empty_turnover_api_first_start_transactions(client):
+    """<summary>ОСВ и общий CRUD доступны сразу после первого старта без ручного создания движений.</summary>"""
+    # Подготовка
+    transactions = client.get("/api/entities/transactions")
+
+    # Действие
+    response = client.post("/api/turnover", json={})
+
+    # Проверки
+    assert transactions.status_code == response.status_code == 200
+    assert len(transactions.json()) == 12 and len(response.json()) == 4
+    assert all(row["income"] > 0 and row["expense"] > 0 for row in response.json())

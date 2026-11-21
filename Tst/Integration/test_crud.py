@@ -203,7 +203,7 @@ def test_success_legacy_serialization_swagger_and_reports(client):
     # Проверки
     assert before == after
     assert factory.create(restored).convert(restored) == before
-    assert set(after) == {"ranges", "groups", "warehouses", "nomenclatures", "recipes", "is_loaded"}
+    assert set(after) == {"ranges", "groups", "warehouses", "nomenclatures", "recipes", "transactions", "is_loaded"}
     assert client.get("/ui/").status_code == 200
     assert "/api/entities/{entity_type}/{code}" in spec["paths"]
     assert formats.status_code == 200 and formats.json()

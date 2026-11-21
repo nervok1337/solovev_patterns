@@ -13,8 +13,6 @@ from Src.Logics.deserialize_factory import deserialize_factory
 from Src.Logics.entity_mapper import entity_mapper
 from Src.Logics.storage_adapter import storage_adapter
 from Src.Logics.crud_service import crud_service
-from Src.Logics.turnover_prototype import turnover_prototype
-from Src.Models.transaction_model import transaction_model
 from Src.Core.validator import argument_exception, operation_exception
 
 api = connexion.FlaskApp(__name__)
@@ -86,10 +84,10 @@ def filter_entities(entity_type, body):
 
 
 def get_turnover(body):
-    """Строит ОСВ через тот же отбор с конкретным прототипом отчёта."""
-    selected = crud.select("transactions", body.get("filters", []), turnover_prototype,
-                           start=date.fromisoformat(body["start"]), end=date.fromisoformat(body["end"]))
-    return jsonify([mapper.encode(row) for row in selected.rows]), 200
+    """Передаёт условия и необязательные границы периода отдельному расчёту ОСВ."""
+    period = {name: date.fromisoformat(body[name]) for name in ("start", "end") if name in body}
+    rows = crud.turnover(body.get("filters", []), **period)
+    return jsonify([mapper.encode(row) for row in rows]), 200
 
 
 def get_storage_snapshot():
@@ -150,8 +148,7 @@ storage.convert(settings.settings)
 factory = report_factory(settings.settings)
 convertors = convert_factory()
 mapper = entity_mapper(deserialize_factory(), convertors)
-crud = crud_service(storage_adapter(storage, mapper, settings.settings,
-                                    additional_types={"transactions": transaction_model}))
+crud = crud_service(storage_adapter(storage, mapper, settings.settings))
 
 for error_type in (ValueError, argument_exception):
     api.app.register_error_handler(error_type, invalid_data)

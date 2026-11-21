@@ -2,19 +2,13 @@ from Src.Dtos.comparison_type_enum import comparison_type_enum
 
 
 class filter_dto:
-    """Одно условие по имени или коду, включая путь через вложенные свойства."""
+    """Одно условие по публичному свойству, включая путь через вложенные модели."""
 
-    def __init__(self, field: str, value: str,
+    def __init__(self, field: str, value: object,
                  comparison: comparison_type_enum = comparison_type_enum.EQUALS) -> None:
-        """Отклоняет неверную операцию и доступ к непубличным или лишним полям."""
-        if not isinstance(field, str):
-            raise ValueError("Поле фильтра должно быть строкой")
-        parts = field.split(".")
-        if (any(not part.isidentifier() or part.startswith("_") for part in parts)
-                or parts[-1] not in ("name", "unique_code")):
-            raise ValueError("Путь фильтра должен завершаться name или unique_code")
-        if not isinstance(value, str):
-            raise ValueError("Значение фильтра должно быть строкой")
+        """Проверяет описание условия; существование свойства определяет прототип."""
+        if not isinstance(field, str) or not field:
+            raise ValueError("Поле фильтра должно быть непустой строкой")
         if not isinstance(comparison, comparison_type_enum):
             raise ValueError("Неизвестная операция сравнения")
         self.__field = field
@@ -27,12 +21,11 @@ class filter_dto:
         return self.__field
 
     @property
-    def value(self) -> str:
-        """Строка для точного или частичного сравнения."""
+    def value(self) -> object:
+        """Значение свойства в представлении JSON для сравнения."""
         return self.__value
 
     @property
     def comparison(self) -> comparison_type_enum:
         """Операция сравнения выбранного свойства."""
         return self.__comparison
-

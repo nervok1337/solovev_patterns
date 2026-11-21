@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -57,7 +58,7 @@ def test_full_storage_export_import_compares_all_models(storage, loader, tmp_pat
     def compare(original, loaded):
         """Сравнивает каждое свойство и сохраняемую структуру ссылок, учитывая циклы."""
         assert type(loaded) is type(original)
-        if common.is_simple_value(original):
+        if common.is_simple_value(original) or isinstance(original, datetime):
             assert loaded == original
             return
         if isinstance(original, list):
@@ -97,6 +98,11 @@ def test_full_storage_export_import_compares_all_models(storage, loader, tmp_pat
     for item in restored.nomenclatures:
         assert item.range is ranges[item.range.unique_code]
         assert item.group is groups[item.group.unique_code]
+    warehouses = {item.unique_code: item for item in restored.warehouses}
+    for item in restored.transactions:
+        assert item.nomenclature is nomenclatures[item.nomenclature.unique_code]
+        assert item.storage is warehouses[item.storage.unique_code]
+        assert item.range is ranges[item.range.unique_code]
 
     recipe = restored.recipes[0]
     assert isinstance(recipe.ingredients[0], recipe_model)
@@ -112,8 +118,18 @@ def test_full_storage_export_import_compares_all_models(storage, loader, tmp_pat
 
 
 def test_existing_export_is_supported(loader):
+    """<summary>Старый JSON без движений загружается с пустой коллекцией транзакций.</summary>"""
+    # Подготовка
     path = Path(__file__).resolve().parents[2] / "Docs/Serialization/storage.json"
-    assert serialize(loader.load_storage(path)) == json.loads(path.read_text(encoding="utf-8"))
+    expected = json.loads(path.read_text(encoding="utf-8"))
+    expected["transactions"] = []
+
+    # Действие
+    restored = loader.load_storage(path)
+
+    # Проверки
+    assert restored.transactions == []
+    assert serialize(restored) == expected
 
 
 def test_separate_organization(loader):

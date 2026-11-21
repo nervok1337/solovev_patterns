@@ -6,6 +6,7 @@ from typing import Generic, Self, TypeVar, get_args, get_type_hints
 from Src.Core.common import common
 from Src.Dtos.comparison_type_enum import comparison_type_enum
 from Src.Dtos.filter_dto import filter_dto
+from Src.Logics.convert_factory import convert_factory
 
 T = TypeVar("T")
 
@@ -22,6 +23,7 @@ class prototype(Generic[T]):
         """Запоминает тип для проверки фильтра независимо от наличия записей."""
         self._items = tuple(source)
         self.__model_type = model_type
+        self.__convertors = convert_factory()
 
     @property
     def data(self) -> list[T]:
@@ -51,16 +53,19 @@ class prototype(Generic[T]):
         if not isinstance(annotation, type) or parts[0] not in common.get_fields(annotation):
             return False
         field_type = get_type_hints(getattr(annotation, parts[0]).fget).get("return")
-        return field_type is str if len(parts) == 1 else cls.__has_path(field_type, parts[1:])
+        return True if len(parts) == 1 else cls.__has_path(field_type, parts[1:])
 
-    @classmethod
-    def __matches(cls, source: object, condition: filter_dto) -> bool:
+    def __matches(self, source: object, condition: filter_dto) -> bool:
         """Проверяет условие хотя бы для одного значения указанного пути."""
-        compare = cls.__comparisons[condition.comparison]
-        return any(
-            isinstance(value, str) and compare(value, condition.value)
-            for value in cls.__values(source, tuple(condition.field.split(".")), set())
-        )
+        compare = self.__comparisons[condition.comparison]
+        for value in self.__values(source, tuple(condition.field.split(".")), set()):
+            value = self.__convertors.create(value).convert(value, "value")["value"]
+            if condition.comparison is comparison_type_enum.LIKE:
+                if not isinstance(value, str) or not isinstance(condition.value, str):
+                    continue
+            if compare(value, condition.value):
+                return True
+        return False
 
     @classmethod
     def __values(cls, source: object, parts: tuple[str, ...], active: set):
@@ -82,4 +87,3 @@ class prototype(Generic[T]):
                     yield from cls.__values(value, parts[1:], active)
         finally:
             active.remove(key)
-
